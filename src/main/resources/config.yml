@@ -1,0 +1,13 @@
+messages:
+
+  prefix: "<gradient:#00ff99:#00ccff><bold>EasyKits</bold></gradient> <gray>»</gray> "
+
+  no-permission: "<red>You do not have permission."
+
+  player-only: "<red>This command can only be used by players."
+
+  reloaded: "<green>Plugin reloaded successfully."
+
+settings:
+
+  debug: false
