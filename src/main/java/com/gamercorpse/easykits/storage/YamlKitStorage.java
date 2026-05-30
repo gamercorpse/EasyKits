@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,12 +80,23 @@ public class YamlKitStorage implements KitStorage {
                     )
             );
 
-            List<ItemStack> items =
-                    (List<ItemStack>) configuration.getList("items");
+            List<ItemStack> items = new ArrayList<>();
 
-            if (items != null) {
-                kit.setItems(items);
+            List<?> rawItems = configuration.getList("items");
+
+            if (rawItems != null) {
+
+                for (Object object : rawItems) {
+
+                    if (!(object instanceof ItemStack item)) {
+                        continue;
+                    }
+
+                    items.add(item);
+                }
             }
+
+            kit.setItems(items);
 
             loadedKits.put(
                     id.toLowerCase(),
