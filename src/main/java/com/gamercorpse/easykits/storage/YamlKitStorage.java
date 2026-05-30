@@ -82,7 +82,14 @@ public class YamlKitStorage implements KitStorage {
 
             YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
 
-            Kit kit = new Kit(cfg.getString("id"));
+            String id = cfg.getString("id");
+
+            if (id == null) {
+                plugin.getLogger().warning("[EasyKits] Invalid kit file: " + file.getName());
+                continue;
+            }
+
+            Kit kit = new Kit(id);
 
             kit.setDisplayName(cfg.getString("display-name"));
             kit.setPermission(cfg.getString("permission"));
@@ -91,10 +98,75 @@ public class YamlKitStorage implements KitStorage {
 
             kit.setIconMaterial(cfg.getString("icon.material"));
             kit.setIconModelData(cfg.getInt("icon.custom-model-data"));
-
             kit.setSlot(cfg.getInt("slot"));
 
-            kits.put(kit.getId().toLowerCase(), kit);
+            // =========================
+            // COMMANDS
+            // =========================
+            if (cfg.isList("commands")) {
+                int i = 0;
+                for (String cmd : cfg.getStringList("commands")) {
+                    kit.getCommands().put("cmd_" + i, cmd);
+                    i++;
+                }
+            }
+
+            // =========================
+            // ITEMS (CRITICAL FIX)
+            // =========================
+            Map<String, KitItem> items = new HashMap<>();
+
+            if (cfg.isConfigurationSection("items")) {
+
+                var section = cfg.getConfigurationSection("items");
+
+                for (String key : section.getKeys(false)) {
+
+                    var itemSec = section.getConfigurationSection(key);
+
+                    if (itemSec == null) continue;
+
+                    KitItem item = new KitItem();
+
+                    item.setMaterial(itemSec.getString("material"));
+                    item.setAmount(itemSec.getInt("amount", 1));
+
+                    if (itemSec.contains("custom-model-data")) {
+                        item.setCustomModelData(itemSec.getInt("custom-model-data"));
+                    }
+
+                    item.setName(itemSec.getString("name"));
+
+                    if (itemSec.isList("lore")) {
+                        item.setLore(itemSec.getStringList("lore"));
+                    }
+
+                    if (itemSec.isConfigurationSection("enchantments")) {
+
+                        Map<String, Integer> ench = new HashMap<>();
+
+                        var enchSec = itemSec.getConfigurationSection("enchantments");
+
+                        for (String enchKey : enchSec.getKeys(false)) {
+                            ench.put(enchKey, enchSec.getInt(enchKey));
+                        }
+
+                        item.setEnchantments(ench);
+                    }
+
+                    item.setUnbreakable(itemSec.getBoolean("unbreakable"));
+
+                    items.put(key, item);
+                }
+            }
+
+            kit.setItems(items);
+
+            plugin.getLogger().info(
+                    "[EasyKits] Loaded kit " + id + " with " + items.size() + " items"
+            );
+
+            kits.put(id.toLowerCase(), kit);
         }
 
         return kits;

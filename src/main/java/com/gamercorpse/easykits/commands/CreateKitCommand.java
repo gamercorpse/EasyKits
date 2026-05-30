@@ -2,13 +2,14 @@ package com.gamercorpse.easykits.commands;
 
 import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.models.Kit;
+import com.gamercorpse.easykits.models.KitItem;
 import com.gamercorpse.easykits.utils.MessageUtil;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CreateKitCommand {
 
@@ -24,7 +25,6 @@ public class CreateKitCommand {
 
             MessageUtil.send(sender,
                     plugin.getConfig().getString("messages.player-only"));
-
             return true;
         }
 
@@ -32,13 +32,13 @@ public class CreateKitCommand {
 
             MessageUtil.send(player,
                     plugin.getConfig().getString("messages.no-permission"));
-
             return true;
         }
 
         if (args.length < 2) {
 
-            MessageUtil.send(player, "<red>Usage: /easykits create <id>");
+            MessageUtil.send(player,
+                    "<red>Usage: /easykits create <id>");
             return true;
         }
 
@@ -46,23 +46,28 @@ public class CreateKitCommand {
 
         if (plugin.getKitManager().exists(id)) {
 
-            MessageUtil.send(player, "<red>That kit already exists.");
+            MessageUtil.send(player,
+                    "<red>That kit already exists.");
             return true;
         }
 
         Kit kit = new Kit(id);
 
-        kit.setDisplayName(id);
-        kit.setPermission("easykits.kit." + id);
-        kit.setCooldown(0L);
+        Map<String, KitItem> items = new HashMap<>();
 
-        List<ItemStack> items = new ArrayList<>();
+        int index = 0;
 
         for (ItemStack item : player.getInventory().getContents()) {
 
-            if (item == null) continue;
+            if (item == null || item.getType().isAir()) continue;
 
-            items.add(item.clone());
+            KitItem kitItem = new KitItem();
+
+            kitItem.setMaterial(item.getType().name());
+            kitItem.setAmount(item.getAmount());
+
+            items.put("item_" + index, kitItem);
+            index++;
         }
 
         kit.setItems(items);
