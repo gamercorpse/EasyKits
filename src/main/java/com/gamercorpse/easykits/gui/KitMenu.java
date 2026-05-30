@@ -17,7 +17,7 @@ import java.util.List;
 
 public class KitMenu {
 
-    public static final String MENU_TITLE = "Easy Kits";
+    public static final String MENU_TITLE = "<gradient:#00ff99:#00ccff>Easy Kits</gradient>";
 
     private final EasyKits plugin;
 

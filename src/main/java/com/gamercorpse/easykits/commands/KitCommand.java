@@ -1,11 +1,13 @@
 package com.gamercorpse.easykits.commands;
 
 import com.gamercorpse.easykits.EasyKits;
+import com.gamercorpse.easykits.gui.KitEditorMenu;
 import com.gamercorpse.easykits.models.Kit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +21,7 @@ public class KitCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender,
-                             Command command,
-                             String label,
-                             String[] args) {
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (args.length == 0) {
             return new OpenMenuCommand(plugin).execute(sender, args);
@@ -50,8 +49,29 @@ public class KitCommand implements CommandExecutor, TabCompleter {
                 return new OpenMenuCommand(plugin).execute(sender, args);
             }
 
-            case "list" -> {
+            case "edit" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Players only.");
+                    return true;
+                }
 
+                if (args.length < 2) {
+                    sender.sendMessage("Usage: /" + label + " edit <kit>");
+                    return true;
+                }
+
+                Kit kit = plugin.getKitManager().getKit(args[1]);
+
+                if (kit == null) {
+                    sender.sendMessage("Unknown kit.");
+                    return true;
+                }
+
+                new KitEditorMenu(plugin).open(player, kit);
+                return true;
+            }
+
+            case "list" -> {
                 StringBuilder sb = new StringBuilder("Kits: ");
 
                 for (Kit kit : plugin.getKitManager().getKits().values()) {
@@ -70,34 +90,29 @@ public class KitCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender,
-                                      Command command,
-                                      String alias,
-                                      String[] args) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
 
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-
             completions.add("give");
             completions.add("create");
             completions.add("reload");
             completions.add("delete");
             completions.add("menu");
             completions.add("list");
-
+            completions.add("edit");
             return completions;
         }
 
         if (args.length == 2 &&
                 (args[0].equalsIgnoreCase("give")
-                        || args[0].equalsIgnoreCase("delete"))) {
+                        || args[0].equalsIgnoreCase("delete")
+                        || args[0].equalsIgnoreCase("edit"))) {
 
             for (Kit kit : plugin.getKitManager().getKits().values()) {
                 completions.add(kit.getId());
             }
-
-            return completions;
         }
 
         return completions;

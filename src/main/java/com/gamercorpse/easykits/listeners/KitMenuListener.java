@@ -6,6 +6,7 @@ import com.gamercorpse.easykits.models.Kit;
 import com.gamercorpse.easykits.models.KitItem;
 import com.gamercorpse.easykits.utils.ItemBuilder;
 import com.gamercorpse.easykits.utils.MessageUtil;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,11 +24,10 @@ public class KitMenuListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent event) {
 
-        if (event.getView().title() == null) return;
+        String title = PlainTextComponentSerializer.plainText()
+                .serialize(event.getView().title());
 
-        String title = event.getView().title().toString();
-
-        if (!title.contains("Easy Kits")) {
+        if (!title.equalsIgnoreCase("Easy Kits")) {
             return;
         }
 
@@ -43,12 +43,15 @@ public class KitMenuListener implements Listener {
             return;
         }
 
-        int slot = event.getSlot();
+        int slot = event.getRawSlot();
+
+        if (slot < 0 || slot >= event.getInventory().getSize()) {
+            return;
+        }
 
         Kit clickedKit = null;
 
         for (Kit kit : plugin.getKitManager().getKits().values()) {
-
             if (kit.getSlot() == slot) {
                 clickedKit = kit;
                 break;
@@ -72,18 +75,16 @@ public class KitMenuListener implements Listener {
             return;
         }
 
-        int given = 0;
-
         if (clickedKit.getItems() != null) {
-
             for (KitItem kitItem : clickedKit.getItems().values()) {
 
                 ItemStack item = ItemBuilder.build(kitItem);
 
-                if (item == null || item.getType().isAir()) continue;
+                if (item == null || item.getType().isAir()) {
+                    continue;
+                }
 
                 player.getInventory().addItem(item);
-                given++;
             }
         }
 

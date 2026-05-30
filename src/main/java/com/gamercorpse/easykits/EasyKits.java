@@ -1,6 +1,7 @@
 package com.gamercorpse.easykits;
 
 import com.gamercorpse.easykits.commands.KitCommand;
+import com.gamercorpse.easykits.listeners.EditorListener;
 import com.gamercorpse.easykits.listeners.KitMenuListener;
 import com.gamercorpse.easykits.managers.KitManager;
 import com.gamercorpse.easykits.storage.YamlKitStorage;
@@ -39,6 +40,11 @@ public class EasyKits extends JavaPlugin {
         );
 
         getLogger().info("EasyKits enabled.");
+
+        getServer().getPluginManager().registerEvents(
+                new EditorListener(this),
+                this
+        );
     }
 
     @Override

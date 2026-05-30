@@ -1,5 +1,13 @@
 package com.gamercorpse.easykits.models;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,5 +80,62 @@ public class KitItem {
 
     public void setUnbreakable(boolean unbreakable) {
         this.unbreakable = unbreakable;
+    }
+
+    public static KitItem fromItemStack(ItemStack item) {
+
+        KitItem kitItem = new KitItem();
+
+        if (item == null || item.getType() == Material.AIR) {
+            kitItem.setMaterial("AIR");
+            kitItem.setAmount(1);
+            return kitItem;
+        }
+
+        kitItem.setMaterial(item.getType().name());
+        kitItem.setAmount(item.getAmount());
+
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+
+            MiniMessage mm = MiniMessage.miniMessage();
+
+            if (meta.hasDisplayName()) {
+                Component displayName = meta.displayName();
+
+                if (displayName != null) {
+                    kitItem.setName(mm.serialize(displayName));
+                }
+            }
+
+            if (meta.hasLore() && meta.lore() != null) {
+                List<String> serializedLore = meta.lore()
+                        .stream()
+                        .map(mm::serialize)
+                        .toList();
+
+                kitItem.setLore(serializedLore);
+            }
+
+            if (meta.hasCustomModelData()) {
+                kitItem.setCustomModelData(meta.getCustomModelData());
+            }
+
+            kitItem.setUnbreakable(meta.isUnbreakable());
+        }
+
+        if (!item.getEnchantments().isEmpty()) {
+
+            Map<String, Integer> enchantments = new HashMap<>();
+
+            for (Map.Entry<Enchantment, Integer> entry : item.getEnchantments().entrySet()) {
+                enchantments.put(entry.getKey().getKey().getKey(), entry.getValue());
+            }
+
+            kitItem.setEnchantments(enchantments);
+        }
+
+        return kitItem;
     }
 }
