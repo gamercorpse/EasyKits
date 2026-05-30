@@ -5,7 +5,9 @@ import com.gamercorpse.easykits.models.Kit;
 import com.gamercorpse.easykits.utils.MessageUtil;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CreateKitCommand {
@@ -62,7 +64,18 @@ public class CreateKitCommand {
         kit.setPermission("easykits.kit." + id);
         kit.setCooldown(0L);
 
-        kit.setItems(List.of(player.getInventory().getContents()));
+        List<ItemStack> items = new ArrayList<>();
+
+        for (ItemStack item : player.getInventory().getContents()) {
+
+            if (item == null) {
+                continue;
+            }
+
+            items.add(item.clone());
+        }
+
+        kit.setItems(items);
 
         plugin.getKitManager().saveKit(kit);
 

@@ -1,6 +1,7 @@
 package com.gamercorpse.easykits.utils;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 
 public class FoliaUtil {
@@ -18,7 +19,9 @@ public class FoliaUtil {
 
         try {
 
-            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            Class.forName(
+                    "io.papermc.paper.threadedregions.RegionizedServer"
+            );
 
             return true;
 
@@ -32,13 +35,38 @@ public class FoliaUtil {
 
         if (folia) {
 
-            Bukkit.getGlobalRegionScheduler().run(plugin,
-                    task -> runnable.run());
+            Bukkit.getGlobalRegionScheduler().run(
+                    plugin,
+                    task -> runnable.run()
+            );
 
             return;
         }
 
-        Bukkit.getScheduler().runTask(plugin, runnable);
+        Bukkit.getScheduler().runTask(
+                plugin,
+                runnable
+        );
+    }
+
+    public void runEntity(Entity entity,
+                          Runnable runnable) {
+
+        if (folia) {
+
+            entity.getScheduler().run(
+                    plugin,
+                    task -> runnable.run(),
+                    null
+            );
+
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(
+                plugin,
+                runnable
+        );
     }
 
     public boolean isFolia() {

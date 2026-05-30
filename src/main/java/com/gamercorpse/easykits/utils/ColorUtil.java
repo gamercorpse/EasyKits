@@ -8,6 +8,10 @@ public class ColorUtil {
     private static final MiniMessage MINI_MESSAGE =
             MiniMessage.miniMessage();
 
+    private ColorUtil() {
+
+    }
+
     public static Component color(String text) {
 
         return MINI_MESSAGE.deserialize(text);
