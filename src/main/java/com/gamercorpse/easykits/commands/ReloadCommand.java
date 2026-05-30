@@ -9,28 +9,29 @@ public class ReloadCommand {
     private final EasyKits plugin;
 
     public ReloadCommand(EasyKits plugin) {
-
         this.plugin = plugin;
     }
 
-    public boolean execute(CommandSender sender,
-                           String[] args) {
+    public boolean execute(CommandSender sender, String[] args) {
 
         if (!sender.hasPermission("easykits.admin")) {
 
-            MessageUtil.send(sender,
-                    plugin.getConfig()
-                            .getString("messages.no-permission"));
+            MessageUtil.send(
+                    sender,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    plugin.getConfig().getString("messages.no-permission", "<red>No permission.")
+            );
 
             return true;
         }
 
-        plugin.getConfigManager().reload();
-        plugin.getKitManager().loadKits();
+        plugin.getKitManager().load();
 
-        MessageUtil.send(sender,
-                plugin.getConfig()
-                        .getString("messages.reloaded"));
+        MessageUtil.send(
+                sender,
+                plugin.getConfig().getString("messages.prefix", ""),
+                plugin.getConfig().getString("messages.reloaded", "<green>Kits reloaded.")
+        );
 
         return true;
     }

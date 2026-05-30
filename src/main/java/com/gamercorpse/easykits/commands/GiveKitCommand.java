@@ -21,15 +21,23 @@ public class GiveKitCommand {
 
         if (!sender.hasPermission("easykits.admin")) {
 
-            MessageUtil.send(sender,
-                    plugin.getConfig().getString("messages.no-permission"));
+            MessageUtil.send(
+                    sender,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    plugin.getConfig().getString("messages.no-permission", "<red>No permission.")
+            );
+
             return true;
         }
 
         if (args.length < 3) {
 
-            MessageUtil.send(sender,
-                    "<red>Usage: /easykits give <player> <kit>");
+            MessageUtil.send(
+                    sender,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    "<red>Usage: /easykits give <player> <kit>"
+            );
+
             return true;
         }
 
@@ -37,8 +45,12 @@ public class GiveKitCommand {
 
         if (target == null) {
 
-            MessageUtil.send(sender,
-                    "<red>Player not found.");
+            MessageUtil.send(
+                    sender,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    "<red>Player not found."
+            );
+
             return true;
         }
 
@@ -46,48 +58,38 @@ public class GiveKitCommand {
 
         if (kit == null) {
 
-            MessageUtil.send(sender,
-                    "<red>Kit not found.");
-            return true;
-        }
+            MessageUtil.send(
+                    sender,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    "<red>Kit not found."
+            );
 
-        if (kit.getItems() == null || kit.getItems().isEmpty()) {
-
-            MessageUtil.send(sender,
-                    "<red>This kit has no items.");
             return true;
         }
 
         int given = 0;
 
-        for (KitItem kitItem : kit.getItems().values()) {
+        if (kit.getItems() != null) {
 
-            ItemStack item = ItemBuilder.build(kitItem);
+            for (KitItem kitItem : kit.getItems().values()) {
 
-            if (item == null || item.getType().isAir()) continue;
+                ItemStack item = ItemBuilder.build(kitItem);
 
-            target.getInventory().addItem(item);
-            given++;
-        }
+                if (item == null || item.getType().isAir()) continue;
 
-        // Run kit commands (if any)
-        if (kit.getCommands() != null) {
-
-            for (String cmd : kit.getCommands().values()) {
-
-                String parsed = cmd.replace("%player%", target.getName());
-
-                plugin.getServer().dispatchCommand(
-                        plugin.getServer().getConsoleSender(),
-                        parsed
-                );
+                target.getInventory().addItem(item);
+                given++;
             }
         }
 
-        MessageUtil.send(sender,
+        // Give feedback to sender
+        MessageUtil.send(
+                sender,
+                plugin.getConfig().getString("messages.prefix", ""),
                 "<green>Gave kit <white>" + kit.getId() +
                         "</white> to <white>" + target.getName() +
-                        "</white> (" + given + " items).");
+                        "</white> (" + given + " items)."
+        );
 
         return true;
     }

@@ -173,15 +173,75 @@ public class YamlKitStorage implements KitStorage {
     }
 
     @Override
-    public void saveKit(com.gamercorpse.easykits.models.Kit kit) {
-        // implemented later (Stage 2 rewrite system)
+    public void saveKit(Kit kit) {
+
+        File file = new File(kitsFolder, kit.getId().toLowerCase() + ".yml");
+
+        YamlConfiguration cfg = new YamlConfiguration();
+
+        cfg.set("id", kit.getId());
+        cfg.set("display-name", kit.getDisplayName());
+        cfg.set("permission", kit.getPermission());
+        cfg.set("cooldown", kit.getCooldown());
+        cfg.set("one-time", kit.isOneTime());
+
+        cfg.set("icon.material", kit.getIconMaterial());
+        cfg.set("icon.custom-model-data", kit.getIconModelData());
+
+        cfg.set("slot", kit.getSlot());
+
+        if (kit.getCommands() != null && !kit.getCommands().isEmpty()) {
+            cfg.set("commands", kit.getCommands().values());
+        }
+
+        if (kit.getItems() != null && !kit.getItems().isEmpty()) {
+
+            for (var entry : kit.getItems().entrySet()) {
+
+                String path = "items." + entry.getKey();
+
+                var item = entry.getValue();
+
+                cfg.set(path + ".material", item.getMaterial());
+                cfg.set(path + ".amount", item.getAmount());
+
+                if (item.getCustomModelData() != null) {
+                    cfg.set(path + ".custom-model-data", item.getCustomModelData());
+                }
+
+                if (item.getName() != null) {
+                    cfg.set(path + ".name", item.getName());
+                }
+
+                if (item.getLore() != null) {
+                    cfg.set(path + ".lore", item.getLore());
+                }
+
+                if (item.getEnchantments() != null) {
+                    for (var ench : item.getEnchantments().entrySet()) {
+                        cfg.set(path + ".enchantments." + ench.getKey(), ench.getValue());
+                    }
+                }
+
+                cfg.set(path + ".unbreakable", item.isUnbreakable());
+            }
+        }
+
+        try {
+            cfg.save(file);
+        } catch (Exception e) {
+            plugin.getLogger().severe("[EasyKits] Failed to save kit " + kit.getId());
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void deleteKit(String id) {
 
-        File file = new File(kitsFolder, id + ".yml");
+        File file = new File(kitsFolder, id.toLowerCase() + ".yml");
 
-        if (file.exists()) file.delete();
+        if (file.exists()) {
+            file.delete();
+        }
     }
 }

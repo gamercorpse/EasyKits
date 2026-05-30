@@ -35,7 +35,7 @@ public class KitTabCompleter implements TabCompleter {
             completions.add("give");
             completions.add("reload");
 
-            for (Kit kit : plugin.getKitManager().getKits()) {
+            for (Kit kit : plugin.getKitManager().getKits().values()) {
                 completions.add(kit.getId());
             }
 
@@ -46,7 +46,7 @@ public class KitTabCompleter implements TabCompleter {
 
             if (args[0].equalsIgnoreCase("delete")) {
 
-                for (Kit kit : plugin.getKitManager().getKits()) {
+                for (Kit kit : plugin.getKitManager().getKits().values()) {
                     completions.add(kit.getId());
                 }
 
@@ -67,7 +67,7 @@ public class KitTabCompleter implements TabCompleter {
 
             if (args[0].equalsIgnoreCase("give")) {
 
-                for (Kit kit : plugin.getKitManager().getKits()) {
+                for (Kit kit : plugin.getKitManager().getKits().values()) {
                     completions.add(kit.getId());
                 }
 

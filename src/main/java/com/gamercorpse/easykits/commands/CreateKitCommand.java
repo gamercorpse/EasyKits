@@ -23,31 +23,43 @@ public class CreateKitCommand {
 
         if (!(sender instanceof Player player)) {
 
-            MessageUtil.send(sender,
-                    plugin.getConfig().getString("messages.player-only"));
+            MessageUtil.send(
+                    sender,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    plugin.getConfig().getString("messages.player-only", "<red>Players only.")
+            );
             return true;
         }
 
         if (!player.hasPermission("easykits.admin")) {
 
-            MessageUtil.send(player,
-                    plugin.getConfig().getString("messages.no-permission"));
+            MessageUtil.send(
+                    player,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    plugin.getConfig().getString("messages.no-permission", "<red>No permission.")
+            );
             return true;
         }
 
         if (args.length < 2) {
 
-            MessageUtil.send(player,
-                    "<red>Usage: /easykits create <id>");
+            MessageUtil.send(
+                    player,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    "<red>Usage: /easykits create <id>"
+            );
             return true;
         }
 
-        String id = args[1];
+        String id = args[1].toLowerCase();
 
         if (plugin.getKitManager().exists(id)) {
 
-            MessageUtil.send(player,
-                    "<red>That kit already exists.");
+            MessageUtil.send(
+                    player,
+                    plugin.getConfig().getString("messages.prefix", ""),
+                    "<red>Kit already exists."
+            );
             return true;
         }
 
@@ -72,10 +84,13 @@ public class CreateKitCommand {
 
         kit.setItems(items);
 
-        plugin.getKitManager().saveKit(kit);
+        plugin.getKitManager().save(kit);
 
-        MessageUtil.send(player,
-                "<green>Created kit <white>" + id + "</white>.");
+        MessageUtil.send(
+                player,
+                plugin.getConfig().getString("messages.prefix", ""),
+                "<green>Created kit <white>" + id + "</white> with <white>" + items.size() + "</white> items."
+        );
 
         return true;
     }

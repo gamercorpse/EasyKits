@@ -2,17 +2,19 @@ package com.gamercorpse.easykits.commands;
 
 import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.models.Kit;
-import com.gamercorpse.easykits.utils.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 
-public class KitCommand implements CommandExecutor {
+import java.util.ArrayList;
+import java.util.List;
+
+public class KitCommand implements CommandExecutor, TabCompleter {
 
     private final EasyKits plugin;
 
     public KitCommand(EasyKits plugin) {
-
         this.plugin = plugin;
     }
 
@@ -23,55 +25,81 @@ public class KitCommand implements CommandExecutor {
                              String[] args) {
 
         if (args.length == 0) {
-
-            MessageUtil.send(sender, "<yellow>EasyKits Commands:");
-            MessageUtil.send(sender, "<gray>/easykits create <id>");
-            MessageUtil.send(sender, "<gray>/easykits delete <id>");
-            MessageUtil.send(sender, "<gray>/easykits give <player> <kit>");
-            MessageUtil.send(sender, "<gray>/easykits reload");
-            MessageUtil.send(sender, "<gray>/easykits <kit>");
-
-            return true;
+            return new OpenMenuCommand(plugin).execute(sender, args);
         }
 
-        String subCommand = args[0].toLowerCase();
-
-        switch (subCommand) {
-
-            case "create" -> {
-                return new CreateKitCommand(plugin)
-                        .execute(sender, args);
-            }
-
-            case "delete" -> {
-                return new DeleteKitCommand(plugin)
-                        .execute(sender, args);
-            }
+        switch (args[0].toLowerCase()) {
 
             case "give" -> {
-                return new GiveKitCommand(plugin)
-                        .execute(sender, args);
+                return new GiveKitCommand(plugin).execute(sender, args);
+            }
+
+            case "create" -> {
+                return new CreateKitCommand(plugin).execute(sender, args);
             }
 
             case "reload" -> {
-                return new ReloadCommand(plugin)
-                        .execute(sender, args);
+                return new ReloadCommand(plugin).execute(sender, args);
+            }
+
+            case "delete" -> {
+                return new DeleteKitCommand(plugin).execute(sender, args);
+            }
+
+            case "menu" -> {
+                return new OpenMenuCommand(plugin).execute(sender, args);
+            }
+
+            case "list" -> {
+
+                StringBuilder sb = new StringBuilder("Kits: ");
+
+                for (Kit kit : plugin.getKitManager().getKits().values()) {
+                    sb.append(kit.getId()).append(", ");
+                }
+
+                sender.sendMessage(sb.toString());
+                return true;
             }
 
             default -> {
-
-                Kit kit = plugin.getKitManager().getKit(subCommand);
-
-                if (kit == null) {
-
-                    MessageUtil.send(sender,
-                            "<red>Unknown kit.");
-
-                    return true;
-                }
-
+                sender.sendMessage("Unknown subcommand.");
                 return true;
             }
         }
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender,
+                                      Command command,
+                                      String alias,
+                                      String[] args) {
+
+        List<String> completions = new ArrayList<>();
+
+        if (args.length == 1) {
+
+            completions.add("give");
+            completions.add("create");
+            completions.add("reload");
+            completions.add("delete");
+            completions.add("menu");
+            completions.add("list");
+
+            return completions;
+        }
+
+        if (args.length == 2 &&
+                (args[0].equalsIgnoreCase("give")
+                        || args[0].equalsIgnoreCase("delete"))) {
+
+            for (Kit kit : plugin.getKitManager().getKits().values()) {
+                completions.add(kit.getId());
+            }
+
+            return completions;
+        }
+
+        return completions;
     }
 }
