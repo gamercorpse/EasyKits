@@ -15,18 +15,15 @@ public class CreateKitCommand {
     private final EasyKits plugin;
 
     public CreateKitCommand(EasyKits plugin) {
-
         this.plugin = plugin;
     }
 
-    public boolean execute(CommandSender sender,
-                           String[] args) {
+    public boolean execute(CommandSender sender, String[] args) {
 
         if (!(sender instanceof Player player)) {
 
             MessageUtil.send(sender,
-                    plugin.getConfig()
-                            .getString("messages.player-only"));
+                    plugin.getConfig().getString("messages.player-only"));
 
             return true;
         }
@@ -34,17 +31,14 @@ public class CreateKitCommand {
         if (!player.hasPermission("easykits.admin")) {
 
             MessageUtil.send(player,
-                    plugin.getConfig()
-                            .getString("messages.no-permission"));
+                    plugin.getConfig().getString("messages.no-permission"));
 
             return true;
         }
 
         if (args.length < 2) {
 
-            MessageUtil.send(player,
-                    "<red>Usage: /easykits create <id>");
-
+            MessageUtil.send(player, "<red>Usage: /easykits create <id>");
             return true;
         }
 
@@ -52,9 +46,7 @@ public class CreateKitCommand {
 
         if (plugin.getKitManager().exists(id)) {
 
-            MessageUtil.send(player,
-                    "<red>That kit already exists.");
-
+            MessageUtil.send(player, "<red>That kit already exists.");
             return true;
         }
 
@@ -68,9 +60,7 @@ public class CreateKitCommand {
 
         for (ItemStack item : player.getInventory().getContents()) {
 
-            if (item == null) {
-                continue;
-            }
+            if (item == null) continue;
 
             items.add(item.clone());
         }

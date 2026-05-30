@@ -1,9 +1,7 @@
 package com.gamercorpse.easykits.models;
 
-import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Kit {
 
@@ -13,12 +11,19 @@ public class Kit {
     private String permission;
     private long cooldown;
 
-    private List<ItemStack> items;
+    private boolean oneTime;
+
+    private String iconMaterial;
+    private int iconModelData;
+
+    private int slot;
+
+    private Map<String, KitItem> items = new HashMap<>();
+
+    private Map<String, String> commands = new HashMap<>();
 
     public Kit(String id) {
-
         this.id = id;
-        this.items = new ArrayList<>();
     }
 
     public String getId() {
@@ -49,11 +54,51 @@ public class Kit {
         this.cooldown = cooldown;
     }
 
-    public List<ItemStack> getItems() {
+    public boolean isOneTime() {
+        return oneTime;
+    }
+
+    public void setOneTime(boolean oneTime) {
+        this.oneTime = oneTime;
+    }
+
+    public String getIconMaterial() {
+        return iconMaterial;
+    }
+
+    public void setIconMaterial(String iconMaterial) {
+        this.iconMaterial = iconMaterial;
+    }
+
+    public int getIconModelData() {
+        return iconModelData;
+    }
+
+    public void setIconModelData(int iconModelData) {
+        this.iconModelData = iconModelData;
+    }
+
+    public int getSlot() {
+        return slot;
+    }
+
+    public void setSlot(int slot) {
+        this.slot = slot;
+    }
+
+    public Map<String, KitItem> getItems() {
         return items;
     }
 
-    public void setItems(List<ItemStack> items) {
+    public void setItems(Map<String, KitItem> items) {
         this.items = items;
+    }
+
+    public Map<String, String> getCommands() {
+        return commands;
+    }
+
+    public void setCommands(Map<String, String> commands) {
+        this.commands = commands;
     }
 }
