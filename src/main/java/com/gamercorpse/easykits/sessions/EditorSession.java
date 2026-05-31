@@ -17,6 +17,7 @@ public class EditorSession {
     private boolean editingPermission;
     private boolean editingCooldown;
     private boolean editingSlot;
+    private boolean editingCommand;
 
     public EditorSession(UUID playerId, Kit kit) {
         this.playerId = playerId;
@@ -44,7 +45,7 @@ public class EditorSession {
     }
 
     public boolean isWaitingForChat() {
-        return editingDisplayName || editingPermission || editingCooldown || editingSlot;
+        return editingDisplayName || editingPermission || editingCooldown || editingSlot || editingCommand;
     }
 
     public boolean isEditingDisplayName() {
@@ -77,5 +78,13 @@ public class EditorSession {
 
     public void setEditingSlot(boolean editingSlot) {
         this.editingSlot = editingSlot;
+    }
+
+    public boolean isEditingCommand() {
+        return editingCommand;
+    }
+
+    public void setEditingCommand(boolean editingCommand) {
+        this.editingCommand = editingCommand;
     }
 }

@@ -1,6 +1,7 @@
 package com.gamercorpse.easykits.listeners;
 
 import com.gamercorpse.easykits.EasyKits;
+import com.gamercorpse.easykits.gui.CommandEditorMenu;
 import com.gamercorpse.easykits.gui.KitEditorMenu;
 import com.gamercorpse.easykits.models.Kit;
 import com.gamercorpse.easykits.sessions.EditorSession;
@@ -14,6 +15,9 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
+import java.util.Map;
 
 public class EditorListener implements Listener {
 
@@ -32,23 +36,27 @@ public class EditorListener implements Listener {
 
         String title = event.getView().getTitle();
 
-        if (!title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
+        if (title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
+            handleKitEditorClick(event, player);
+            return;
+        }
+
+        if (title.startsWith(CommandEditorMenu.TITLE_PREFIX)) {
+            handleCommandEditorClick(event, player, title);
+        }
+    }
+
+    private void handleKitEditorClick(InventoryClickEvent event, Player player) {
+
+        if (!player.hasPermission("easykits.kit.edit")) {
+            event.setCancelled(true);
+            player.closeInventory();
             return;
         }
 
         int rawSlot = event.getRawSlot();
 
         if (rawSlot < 0) {
-            return;
-        }
-
-        if (event.isShiftClick()) {
-            event.setCancelled(true);
-            return;
-        }
-
-        if (rawSlot >= 54) {
-            event.setCancelled(true);
             return;
         }
 
@@ -60,6 +68,18 @@ public class EditorListener implements Listener {
         }
 
         Kit kit = session.getKit();
+
+        if (rawSlot >= 54) {
+            if (event.isShiftClick()) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+
+        if (event.isShiftClick()) {
+            event.setCancelled(true);
+            return;
+        }
 
         if (rawSlot >= 32 && rawSlot <= 40) {
             return;
@@ -96,6 +116,7 @@ public class EditorListener implements Listener {
                 ItemStack cursor = event.getCursor();
 
                 if (cursor != null && cursor.getType() != Material.AIR) {
+
                     kit.setIconMaterial(cursor.getType().name());
 
                     if (cursor.hasItemMeta() && cursor.getItemMeta().hasCustomModelData()) {
@@ -106,8 +127,9 @@ public class EditorListener implements Listener {
 
                     player.sendMessage("Kit icon updated.");
                     new KitEditorMenu(plugin).open(player, kit);
+
                 } else {
-                    player.sendMessage("Pick up an item on your cursor, then click the icon slot.");
+                    player.sendMessage("Pick up an item from your inventory, then click the kit icon slot.");
                 }
             }
 
@@ -117,11 +139,18 @@ public class EditorListener implements Listener {
                 player.sendMessage("Type the menu slot number.");
             }
 
+            case 45 -> {
+                kit.setItems(KitEditorMenu.collectPlayerInventory(player));
+                player.sendMessage("Imported up to 9 items from your inventory. Click Save Kit to save changes.");
+                new KitEditorMenu(plugin).open(player, kit);
+            }
+
+            case 46 -> new CommandEditorMenu(plugin).open(player, kit);
+
             case 49 -> {
                 Inventory inventory = event.getInventory();
 
                 kit.setItems(KitEditorMenu.collectItems(inventory));
-
                 plugin.getKitManager().save(kit);
 
                 player.sendMessage("Kit saved.");
@@ -136,8 +165,67 @@ public class EditorListener implements Listener {
             }
 
             default -> {
-                // Protected editor GUI slot.
             }
+        }
+    }
+
+    private void handleCommandEditorClick(InventoryClickEvent event, Player player, String title) {
+
+        event.setCancelled(true);
+
+        if (!player.hasPermission("easykits.kit.edit")) {
+            player.closeInventory();
+            return;
+        }
+
+        int rawSlot = event.getRawSlot();
+
+        if (rawSlot < 0 || rawSlot >= 54) {
+            return;
+        }
+
+        String kitId = title.substring(CommandEditorMenu.TITLE_PREFIX.length());
+
+        Kit kit = plugin.getKitManager().getKit(kitId);
+
+        if (kit == null) {
+            player.closeInventory();
+            return;
+        }
+
+        EditorSession session = EditorSession.get(player.getUniqueId());
+
+        if (session == null) {
+            EditorSession.create(player.getUniqueId(), kit);
+            session = EditorSession.get(player.getUniqueId());
+        }
+
+        if (rawSlot == 49) {
+            new KitEditorMenu(plugin).open(player, kit);
+            return;
+        }
+
+        if (rawSlot == 53) {
+            session.setEditingCommand(true);
+            player.closeInventory();
+            player.sendMessage("Type the command in chat. Do not include the leading slash. Use %player% for the player name.");
+            return;
+        }
+
+        if (rawSlot >= 0 && rawSlot < 45) {
+
+            List<Map.Entry<String, String>> commands = CommandEditorMenu.getSortedCommands(kit);
+
+            if (rawSlot >= commands.size()) {
+                return;
+            }
+
+            Map.Entry<String, String> entry = commands.get(rawSlot);
+
+            kit.getCommands().remove(entry.getKey());
+
+            player.sendMessage("Removed command: " + entry.getValue());
+            new CommandEditorMenu(plugin).open(player, kit);
         }
     }
 
@@ -145,6 +233,11 @@ public class EditorListener implements Listener {
     public void onDrag(InventoryDragEvent event) {
 
         String title = event.getView().getTitle();
+
+        if (title.startsWith(CommandEditorMenu.TITLE_PREFIX)) {
+            event.setCancelled(true);
+            return;
+        }
 
         if (!title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
             return;
@@ -175,6 +268,12 @@ public class EditorListener implements Listener {
 
         event.setCancelled(true);
 
+        if (!player.hasPermission("easykits.kit.edit")) {
+            EditorSession.remove(player.getUniqueId());
+            player.sendMessage("You do not have permission.");
+            return;
+        }
+
         Kit kit = session.getKit();
         String message = event.getMessage();
 
@@ -182,7 +281,15 @@ public class EditorListener implements Listener {
             session.setEditingDisplayName(false);
             kit.setDisplayName(message);
             player.sendMessage("Display name updated.");
-        } else if (session.isEditingPermission()) {
+
+            player.getScheduler().run(plugin, task ->
+                            new KitEditorMenu(plugin).open(player, kit),
+                    null
+            );
+            return;
+        }
+
+        if (session.isEditingPermission()) {
             session.setEditingPermission(false);
 
             if (message.equalsIgnoreCase("none") || message.equalsIgnoreCase("clear")) {
@@ -192,7 +299,15 @@ public class EditorListener implements Listener {
             }
 
             player.sendMessage("Permission updated.");
-        } else if (session.isEditingCooldown()) {
+
+            player.getScheduler().run(plugin, task ->
+                            new KitEditorMenu(plugin).open(player, kit),
+                    null
+            );
+            return;
+        }
+
+        if (session.isEditingCooldown()) {
             session.setEditingCooldown(false);
 
             try {
@@ -201,7 +316,15 @@ public class EditorListener implements Listener {
             } catch (NumberFormatException ex) {
                 player.sendMessage("Invalid cooldown.");
             }
-        } else if (session.isEditingSlot()) {
+
+            player.getScheduler().run(plugin, task ->
+                            new KitEditorMenu(plugin).open(player, kit),
+                    null
+            );
+            return;
+        }
+
+        if (session.isEditingSlot()) {
             session.setEditingSlot(false);
 
             try {
@@ -210,12 +333,33 @@ public class EditorListener implements Listener {
             } catch (NumberFormatException ex) {
                 player.sendMessage("Invalid slot.");
             }
+
+            player.getScheduler().run(plugin, task ->
+                            new KitEditorMenu(plugin).open(player, kit),
+                    null
+            );
+            return;
         }
 
-        player.getScheduler().run(plugin, task ->
-                        new KitEditorMenu(plugin).open(player, kit),
-                null
-        );
+        if (session.isEditingCommand()) {
+            session.setEditingCommand(false);
+
+            if (message.startsWith("/")) {
+                message = message.substring(1);
+            }
+
+            if (!message.isBlank()) {
+                kit.getCommands().put(CommandEditorMenu.nextCommandKey(kit), message);
+                player.sendMessage("Command added.");
+            } else {
+                player.sendMessage("Command was empty.");
+            }
+
+            player.getScheduler().run(plugin, task ->
+                            new CommandEditorMenu(plugin).open(player, kit),
+                    null
+            );
+        }
     }
 
     @EventHandler
@@ -223,7 +367,8 @@ public class EditorListener implements Listener {
 
         String title = event.getView().getTitle();
 
-        if (!title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
+        if (!title.startsWith(KitEditorMenu.TITLE_PREFIX)
+                && !title.startsWith(CommandEditorMenu.TITLE_PREFIX)) {
             return;
         }
 

@@ -36,8 +36,12 @@ public class KitEditorMenu {
         inventory.setItem(12, button(Material.PAPER, "Edit Permission"));
         inventory.setItem(14, button(Material.CLOCK, "Edit Cooldown"));
         inventory.setItem(16, button(kit.isOneTime() ? Material.LIME_DYE : Material.GRAY_DYE, "Toggle One-Time"));
+
         inventory.setItem(28, icon(kit));
         inventory.setItem(30, button(Material.HOPPER, "Edit Menu Slot"));
+
+        inventory.setItem(45, button(Material.CHEST, "Import Inventory"));
+        inventory.setItem(46, button(Material.COMMAND_BLOCK, "Edit Commands"));
         inventory.setItem(49, button(Material.EMERALD_BLOCK, "Save Kit"));
         inventory.setItem(53, button(Material.BARRIER, "Delete Kit"));
 
@@ -117,6 +121,29 @@ public class KitEditorMenu {
             }
 
             items.put("item_" + index, KitItem.fromItemStack(item));
+            index++;
+        }
+
+        return items;
+    }
+
+    public static Map<String, KitItem> collectPlayerInventory(Player player) {
+
+        Map<String, KitItem> items = new HashMap<>();
+
+        int index = 0;
+
+        for (ItemStack item : player.getInventory().getStorageContents()) {
+
+            if (index >= 9) {
+                break;
+            }
+
+            if (item == null || item.getType().isAir()) {
+                continue;
+            }
+
+            items.put("item_" + index, KitItem.fromItemStack(item.clone()));
             index++;
         }
 

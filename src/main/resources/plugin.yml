@@ -23,6 +23,10 @@ permissions:
 
   easykits.admin:
     default: op
-
+    description: admin access
+  easykits.kit.edit:
+    description: Allows editing kits through the in-game editor
+    default: op
   easykits.use:
     default: true
+    description: default permission

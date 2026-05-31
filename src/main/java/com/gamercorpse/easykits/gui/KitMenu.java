@@ -79,9 +79,9 @@ public class KitMenu {
 
                 List<String> lore = new ArrayList<>();
 
-                lore.add("<gray>Click to claim this kit");
+                lore.add("<gray>Left-click to claim this kit");
+                lore.add("<gray>Right-click to preview this kit");
                 lore.add("");
-
                 lore.add("<yellow>Cooldown: <white>" + kit.getCooldown() + "s");
 
                 if (kit.getPermission() != null &&

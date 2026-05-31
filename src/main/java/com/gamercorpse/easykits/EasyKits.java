@@ -3,6 +3,7 @@ package com.gamercorpse.easykits;
 import com.gamercorpse.easykits.commands.KitCommand;
 import com.gamercorpse.easykits.listeners.EditorListener;
 import com.gamercorpse.easykits.listeners.KitMenuListener;
+import com.gamercorpse.easykits.managers.CooldownManager;
 import com.gamercorpse.easykits.managers.KitManager;
 import com.gamercorpse.easykits.storage.YamlKitStorage;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -10,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class EasyKits extends JavaPlugin {
 
     private KitManager kitManager;
+    private CooldownManager cooldownManager;
 
     @Override
     public void onEnable() {
@@ -19,6 +21,7 @@ public class EasyKits extends JavaPlugin {
         YamlKitStorage storage = new YamlKitStorage(this);
 
         kitManager = new KitManager(storage);
+        cooldownManager = new CooldownManager();
 
         kitManager.load();
 
@@ -39,12 +42,12 @@ public class EasyKits extends JavaPlugin {
                 this
         );
 
-        getLogger().info("EasyKits enabled.");
-
         getServer().getPluginManager().registerEvents(
                 new EditorListener(this),
                 this
         );
+
+        getLogger().info("EasyKits enabled.");
     }
 
     @Override
@@ -54,5 +57,9 @@ public class EasyKits extends JavaPlugin {
 
     public KitManager getKitManager() {
         return kitManager;
+    }
+
+    public CooldownManager getCooldownManager() {
+        return cooldownManager;
     }
 }
