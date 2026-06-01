@@ -4,7 +4,6 @@ import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.models.Kit;
 import com.gamercorpse.easykits.models.KitItem;
 import com.gamercorpse.easykits.sessions.EditorSession;
-import com.gamercorpse.easykits.utils.ItemBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -40,27 +39,12 @@ public class KitEditorMenu {
         inventory.setItem(28, icon(kit));
         inventory.setItem(30, button(Material.HOPPER, "Edit Menu Slot"));
 
-        inventory.setItem(45, button(Material.CHEST, "Import Inventory"));
+        inventory.setItem(32, button(Material.ENDER_EYE, "Preview Kit"));
+        inventory.setItem(34, button(Material.CHEST, "Import Inventory"));
         inventory.setItem(46, button(Material.COMMAND_BLOCK, "Edit Commands"));
+
         inventory.setItem(49, button(Material.EMERALD_BLOCK, "Save Kit"));
         inventory.setItem(53, button(Material.BARRIER, "Delete Kit"));
-
-        int slot = 32;
-
-        if (kit.getItems() != null) {
-            for (KitItem kitItem : kit.getItems().values()) {
-                if (slot > 40) {
-                    break;
-                }
-
-                ItemStack built = ItemBuilder.build(kitItem);
-
-                if (built != null && !built.getType().isAir()) {
-                    inventory.setItem(slot, built);
-                    slot++;
-                }
-            }
-        }
 
         EditorSession.create(player.getUniqueId(), kit);
         player.openInventory(inventory);
@@ -127,6 +111,41 @@ public class KitEditorMenu {
         return items;
     }
 
+    public static void importPlayerInventory(Player player, Kit kit) {
+
+        Map<String, KitItem> items = new HashMap<>();
+
+        int index = 0;
+
+        for (ItemStack item : player.getInventory().getStorageContents()) {
+
+            if (index >= 9) {
+                break;
+            }
+
+            if (item == null || item.getType().isAir()) {
+                continue;
+            }
+
+            items.put("item_" + index, KitItem.fromItemStack(item.clone()));
+            index++;
+        }
+
+        kit.setItems(items);
+
+        ItemStack helmet = player.getInventory().getHelmet();
+        ItemStack chestplate = player.getInventory().getChestplate();
+        ItemStack leggings = player.getInventory().getLeggings();
+        ItemStack boots = player.getInventory().getBoots();
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+
+        kit.setHelmet(toKitItemOrNull(helmet));
+        kit.setChestplate(toKitItemOrNull(chestplate));
+        kit.setLeggings(toKitItemOrNull(leggings));
+        kit.setBoots(toKitItemOrNull(boots));
+        kit.setOffhand(toKitItemOrNull(offhand));
+    }
+
     public static Map<String, KitItem> collectPlayerInventory(Player player) {
 
         Map<String, KitItem> items = new HashMap<>();
@@ -148,5 +167,14 @@ public class KitEditorMenu {
         }
 
         return items;
+    }
+
+    private static KitItem toKitItemOrNull(ItemStack item) {
+
+        if (item == null || item.getType().isAir()) {
+            return null;
+        }
+
+        return KitItem.fromItemStack(item.clone());
     }
 }

@@ -3,6 +3,7 @@ package com.gamercorpse.easykits.listeners;
 import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.gui.CommandEditorMenu;
 import com.gamercorpse.easykits.gui.KitEditorMenu;
+import com.gamercorpse.easykits.gui.PreviewMenu;
 import com.gamercorpse.easykits.models.Kit;
 import com.gamercorpse.easykits.sessions.EditorSession;
 import org.bukkit.Material;
@@ -13,7 +14,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
@@ -76,15 +76,6 @@ public class EditorListener implements Listener {
             return;
         }
 
-        if (event.isShiftClick()) {
-            event.setCancelled(true);
-            return;
-        }
-
-        if (rawSlot >= 32 && rawSlot <= 40) {
-            return;
-        }
-
         event.setCancelled(true);
 
         switch (rawSlot) {
@@ -139,18 +130,17 @@ public class EditorListener implements Listener {
                 player.sendMessage("Type the menu slot number.");
             }
 
-            case 45 -> {
-                kit.setItems(KitEditorMenu.collectPlayerInventory(player));
-                player.sendMessage("Imported up to 9 items from your inventory. Click Save Kit to save changes.");
+            case 32 -> new PreviewMenu(plugin).open(player, kit);
+
+            case 34 -> {
+                KitEditorMenu.importPlayerInventory(player, kit);
+                player.sendMessage("Imported inventory, armor, and offhand. Click Save Kit to save changes.");
                 new KitEditorMenu(plugin).open(player, kit);
             }
 
             case 46 -> new CommandEditorMenu(plugin).open(player, kit);
 
             case 49 -> {
-                Inventory inventory = event.getInventory();
-
-                kit.setItems(KitEditorMenu.collectItems(inventory));
                 plugin.getKitManager().save(kit);
 
                 player.sendMessage("Kit saved.");
@@ -239,15 +229,11 @@ public class EditorListener implements Listener {
             return;
         }
 
-        if (!title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
-            return;
-        }
+        if (title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
 
-        for (int slot : event.getRawSlots()) {
+            for (int slot : event.getRawSlots()) {
 
-            if (slot >= 0 && slot < 54) {
-
-                if (slot < 32 || slot > 40) {
+                if (slot >= 0 && slot < 54) {
                     event.setCancelled(true);
                     return;
                 }

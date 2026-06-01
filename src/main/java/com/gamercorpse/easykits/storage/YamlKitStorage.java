@@ -3,6 +3,7 @@ package com.gamercorpse.easykits.storage;
 import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.models.Kit;
 import com.gamercorpse.easykits.models.KitItem;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -60,6 +61,9 @@ public class YamlKitStorage implements KitStorage {
         cfg.set("items.food.material", "COOKED_BEEF");
         cfg.set("items.food.amount", 32);
 
+        cfg.set("equipment.helmet.material", "LEATHER_HELMET");
+        cfg.set("equipment.helmet.amount", 1);
+
         try {
             cfg.save(file);
         } catch (IOException e) {
@@ -100,9 +104,6 @@ public class YamlKitStorage implements KitStorage {
             kit.setIconModelData(cfg.getInt("icon.custom-model-data"));
             kit.setSlot(cfg.getInt("slot"));
 
-            // =========================
-            // COMMANDS
-            // =========================
             if (cfg.isList("commands")) {
                 int i = 0;
                 for (String cmd : cfg.getStringList("commands")) {
@@ -111,56 +112,35 @@ public class YamlKitStorage implements KitStorage {
                 }
             }
 
-            // =========================
-            // ITEMS (CRITICAL FIX)
-            // =========================
             Map<String, KitItem> items = new HashMap<>();
 
             if (cfg.isConfigurationSection("items")) {
 
-                var section = cfg.getConfigurationSection("items");
+                ConfigurationSection section = cfg.getConfigurationSection("items");
 
-                for (String key : section.getKeys(false)) {
+                if (section != null) {
+                    for (String key : section.getKeys(false)) {
 
-                    var itemSec = section.getConfigurationSection(key);
+                        ConfigurationSection itemSec = section.getConfigurationSection(key);
 
-                    if (itemSec == null) continue;
+                        KitItem item = loadItem(itemSec);
 
-                    KitItem item = new KitItem();
-
-                    item.setMaterial(itemSec.getString("material"));
-                    item.setAmount(itemSec.getInt("amount", 1));
-
-                    if (itemSec.contains("custom-model-data")) {
-                        item.setCustomModelData(itemSec.getInt("custom-model-data"));
-                    }
-
-                    item.setName(itemSec.getString("name"));
-
-                    if (itemSec.isList("lore")) {
-                        item.setLore(itemSec.getStringList("lore"));
-                    }
-
-                    if (itemSec.isConfigurationSection("enchantments")) {
-
-                        Map<String, Integer> ench = new HashMap<>();
-
-                        var enchSec = itemSec.getConfigurationSection("enchantments");
-
-                        for (String enchKey : enchSec.getKeys(false)) {
-                            ench.put(enchKey, enchSec.getInt(enchKey));
+                        if (item != null) {
+                            items.put(key, item);
                         }
-
-                        item.setEnchantments(ench);
                     }
-
-                    item.setUnbreakable(itemSec.getBoolean("unbreakable"));
-
-                    items.put(key, item);
                 }
             }
 
             kit.setItems(items);
+
+            if (cfg.isConfigurationSection("equipment")) {
+                kit.setHelmet(loadItem(cfg.getConfigurationSection("equipment.helmet")));
+                kit.setChestplate(loadItem(cfg.getConfigurationSection("equipment.chestplate")));
+                kit.setLeggings(loadItem(cfg.getConfigurationSection("equipment.leggings")));
+                kit.setBoots(loadItem(cfg.getConfigurationSection("equipment.boots")));
+                kit.setOffhand(loadItem(cfg.getConfigurationSection("equipment.offhand")));
+            }
 
             plugin.getLogger().info(
                     "[EasyKits] Loaded kit " + id + " with " + items.size() + " items"
@@ -196,36 +176,16 @@ public class YamlKitStorage implements KitStorage {
 
         if (kit.getItems() != null && !kit.getItems().isEmpty()) {
 
-            for (var entry : kit.getItems().entrySet()) {
-
-                String path = "items." + entry.getKey();
-
-                var item = entry.getValue();
-
-                cfg.set(path + ".material", item.getMaterial());
-                cfg.set(path + ".amount", item.getAmount());
-
-                if (item.getCustomModelData() != null) {
-                    cfg.set(path + ".custom-model-data", item.getCustomModelData());
-                }
-
-                if (item.getName() != null) {
-                    cfg.set(path + ".name", item.getName());
-                }
-
-                if (item.getLore() != null) {
-                    cfg.set(path + ".lore", item.getLore());
-                }
-
-                if (item.getEnchantments() != null) {
-                    for (var ench : item.getEnchantments().entrySet()) {
-                        cfg.set(path + ".enchantments." + ench.getKey(), ench.getValue());
-                    }
-                }
-
-                cfg.set(path + ".unbreakable", item.isUnbreakable());
+            for (Map.Entry<String, KitItem> entry : kit.getItems().entrySet()) {
+                saveItem(cfg, "items." + entry.getKey(), entry.getValue());
             }
         }
+
+        saveItem(cfg, "equipment.helmet", kit.getHelmet());
+        saveItem(cfg, "equipment.chestplate", kit.getChestplate());
+        saveItem(cfg, "equipment.leggings", kit.getLeggings());
+        saveItem(cfg, "equipment.boots", kit.getBoots());
+        saveItem(cfg, "equipment.offhand", kit.getOffhand());
 
         try {
             cfg.save(file);
@@ -243,5 +203,76 @@ public class YamlKitStorage implements KitStorage {
         if (file.exists()) {
             file.delete();
         }
+    }
+
+    private KitItem loadItem(ConfigurationSection itemSec) {
+
+        if (itemSec == null) {
+            return null;
+        }
+
+        KitItem item = new KitItem();
+
+        item.setMaterial(itemSec.getString("material"));
+        item.setAmount(itemSec.getInt("amount", 1));
+
+        if (itemSec.contains("custom-model-data")) {
+            item.setCustomModelData(itemSec.getInt("custom-model-data"));
+        }
+
+        item.setName(itemSec.getString("name"));
+
+        if (itemSec.isList("lore")) {
+            item.setLore(itemSec.getStringList("lore"));
+        }
+
+        if (itemSec.isConfigurationSection("enchantments")) {
+
+            Map<String, Integer> enchantments = new HashMap<>();
+
+            ConfigurationSection enchSec = itemSec.getConfigurationSection("enchantments");
+
+            if (enchSec != null) {
+                for (String enchKey : enchSec.getKeys(false)) {
+                    enchantments.put(enchKey, enchSec.getInt(enchKey));
+                }
+            }
+
+            item.setEnchantments(enchantments);
+        }
+
+        item.setUnbreakable(itemSec.getBoolean("unbreakable"));
+
+        return item;
+    }
+
+    private void saveItem(YamlConfiguration cfg, String path, KitItem item) {
+
+        if (item == null || item.getMaterial() == null || item.getMaterial().isBlank()) {
+            return;
+        }
+
+        cfg.set(path + ".material", item.getMaterial());
+        cfg.set(path + ".amount", item.getAmount());
+
+        if (item.getCustomModelData() != null) {
+            cfg.set(path + ".custom-model-data", item.getCustomModelData());
+        }
+
+        if (item.getName() != null) {
+            cfg.set(path + ".name", item.getName());
+        }
+
+        if (item.getLore() != null) {
+            cfg.set(path + ".lore", item.getLore());
+        }
+
+        if (item.getEnchantments() != null) {
+            for (Map.Entry<String, Integer> ench : item.getEnchantments().entrySet()) {
+                cfg.set(path + ".enchantments." + ench.getKey(), ench.getValue());
+            }
+        }
+
+        cfg.set(path + ".unbreakable", item.isUnbreakable());
     }
 }

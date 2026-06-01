@@ -36,7 +36,7 @@ public class PreviewMenu {
 
             for (KitItem kitItem : kit.getItems().values()) {
 
-                if (slot >= 45) {
+                if (slot >= 36) {
                     break;
                 }
 
@@ -51,6 +51,12 @@ public class PreviewMenu {
             }
         }
 
+        setPreviewEquipment(inventory, 45, kit.getHelmet(), Material.LEATHER_HELMET, "<yellow>Helmet");
+        setPreviewEquipment(inventory, 46, kit.getChestplate(), Material.LEATHER_CHESTPLATE, "<yellow>Chestplate");
+        setPreviewEquipment(inventory, 47, kit.getLeggings(), Material.LEATHER_LEGGINGS, "<yellow>Leggings");
+        setPreviewEquipment(inventory, 48, kit.getBoots(), Material.LEATHER_BOOTS, "<yellow>Boots");
+        setPreviewEquipment(inventory, 50, kit.getOffhand(), Material.SHIELD, "<yellow>Offhand");
+
         inventory.setItem(49, createButton(
                 Material.ARROW,
                 "<yellow>Back to Kits"
@@ -62,6 +68,27 @@ public class PreviewMenu {
         ));
 
         player.openInventory(inventory);
+    }
+
+    private void setPreviewEquipment(Inventory inventory,
+                                     int slot,
+                                     KitItem kitItem,
+                                     Material fallback,
+                                     String emptyName) {
+
+        if (kitItem == null) {
+            inventory.setItem(slot, createButton(fallback, emptyName + " <gray>(empty)"));
+            return;
+        }
+
+        ItemStack item = ItemBuilder.build(kitItem);
+
+        if (item == null || item.getType().isAir()) {
+            inventory.setItem(slot, createButton(fallback, emptyName + " <gray>(empty)"));
+            return;
+        }
+
+        inventory.setItem(slot, item);
     }
 
     private ItemStack createButton(Material material, String name) {

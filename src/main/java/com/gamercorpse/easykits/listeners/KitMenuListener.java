@@ -9,12 +9,14 @@ import com.gamercorpse.easykits.utils.ItemBuilder;
 import com.gamercorpse.easykits.utils.MessageUtil;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 public class KitMenuListener implements Listener {
 
@@ -195,6 +197,8 @@ public class KitMenuListener implements Listener {
             }
         }
 
+        giveEquipment(player, kit);
+
         MessageUtil.send(
                 player,
                 plugin.getConfig().getString("messages.prefix", ""),
@@ -204,6 +208,53 @@ public class KitMenuListener implements Listener {
         );
 
         player.closeInventory();
+    }
+
+    private void giveEquipment(Player player, Kit kit) {
+
+        PlayerInventory inventory = player.getInventory();
+
+        equipOrAdd(inventory, EquipmentSlotType.HELMET, kit.getHelmet());
+        equipOrAdd(inventory, EquipmentSlotType.CHESTPLATE, kit.getChestplate());
+        equipOrAdd(inventory, EquipmentSlotType.LEGGINGS, kit.getLeggings());
+        equipOrAdd(inventory, EquipmentSlotType.BOOTS, kit.getBoots());
+        equipOrAdd(inventory, EquipmentSlotType.OFFHAND, kit.getOffhand());
+    }
+
+    private void equipOrAdd(PlayerInventory inventory, EquipmentSlotType slotType, KitItem kitItem) {
+
+        if (kitItem == null) {
+            return;
+        }
+
+        ItemStack item = ItemBuilder.build(kitItem);
+
+        if (item == null || item.getType().isAir()) {
+            return;
+        }
+
+        ItemStack existing = switch (slotType) {
+            case HELMET -> inventory.getHelmet();
+            case CHESTPLATE -> inventory.getChestplate();
+            case LEGGINGS -> inventory.getLeggings();
+            case BOOTS -> inventory.getBoots();
+            case OFFHAND -> inventory.getItemInOffHand();
+        };
+
+        if (existing == null || existing.getType() == Material.AIR) {
+
+            switch (slotType) {
+                case HELMET -> inventory.setHelmet(item);
+                case CHESTPLATE -> inventory.setChestplate(item);
+                case LEGGINGS -> inventory.setLeggings(item);
+                case BOOTS -> inventory.setBoots(item);
+                case OFFHAND -> inventory.setItemInOffHand(item);
+            }
+
+            return;
+        }
+
+        inventory.addItem(item);
     }
 
     private void runCommands(Player player, Kit kit) {
@@ -231,5 +282,13 @@ public class KitMenuListener implements Listener {
                     parsed
             );
         }
+    }
+
+    private enum EquipmentSlotType {
+        HELMET,
+        CHESTPLATE,
+        LEGGINGS,
+        BOOTS,
+        OFFHAND
     }
 }
