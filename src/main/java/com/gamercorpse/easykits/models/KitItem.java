@@ -4,12 +4,15 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class KitItem {
 
@@ -25,6 +28,8 @@ public class KitItem {
     private Map<String, Integer> enchantments;
 
     private boolean unbreakable;
+
+    private List<String> itemFlags;
 
     public String getMaterial() {
         return material;
@@ -82,6 +87,14 @@ public class KitItem {
         this.unbreakable = unbreakable;
     }
 
+    public List<String> getItemFlags() {
+        return itemFlags;
+    }
+
+    public void setItemFlags(List<String> itemFlags) {
+        this.itemFlags = itemFlags;
+    }
+
     public static KitItem fromItemStack(ItemStack item) {
 
         KitItem kitItem = new KitItem();
@@ -113,7 +126,7 @@ public class KitItem {
                 List<String> serializedLore = meta.lore()
                         .stream()
                         .map(mm::serialize)
-                        .toList();
+                        .collect(Collectors.toList());
 
                 kitItem.setLore(serializedLore);
             }
@@ -123,6 +136,16 @@ public class KitItem {
             }
 
             kitItem.setUnbreakable(meta.isUnbreakable());
+
+            if (!meta.getItemFlags().isEmpty()) {
+                List<String> flags = new ArrayList<>();
+
+                for (ItemFlag flag : meta.getItemFlags()) {
+                    flags.add(flag.name());
+                }
+
+                kitItem.setItemFlags(flags);
+            }
         }
 
         if (!item.getEnchantments().isEmpty()) {

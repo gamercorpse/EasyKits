@@ -63,8 +63,15 @@ public class ItemBuilder {
                     meta.addEnchant(ench, entry.getValue(), true);
                 }
             }
+        }
 
-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        if (kitItem.getItemFlags() != null) {
+            for (String flagName : kitItem.getItemFlags()) {
+                try {
+                    meta.addItemFlags(ItemFlag.valueOf(flagName.toUpperCase()));
+                } catch (Exception ignored) {
+                }
+            }
         }
 
         item.setItemMeta(meta);

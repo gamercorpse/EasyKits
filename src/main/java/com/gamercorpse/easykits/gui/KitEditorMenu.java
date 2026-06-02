@@ -41,6 +41,8 @@ public class KitEditorMenu {
 
         inventory.setItem(32, button(Material.ENDER_EYE, "Preview Kit"));
         inventory.setItem(34, button(Material.CHEST, "Import Inventory"));
+        inventory.setItem(36, button(Material.BOOKSHELF, "Edit Category: " + kit.getCategory()));
+        inventory.setItem(38, button(Material.ANVIL, "Edit Items"));
         inventory.setItem(46, button(Material.COMMAND_BLOCK, "Edit Commands"));
 
         inventory.setItem(49, button(Material.EMERALD_BLOCK, "Save Kit"));

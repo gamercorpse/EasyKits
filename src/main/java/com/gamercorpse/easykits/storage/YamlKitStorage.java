@@ -42,6 +42,7 @@ public class YamlKitStorage implements KitStorage {
         cfg.set("permission", "easykits.kit.starter");
         cfg.set("cooldown", 3600);
         cfg.set("one-time", false);
+        cfg.set("category", "default");
 
         cfg.set("icon.material", "CHEST");
         cfg.set("icon.custom-model-data", 1001);
@@ -57,6 +58,7 @@ public class YamlKitStorage implements KitStorage {
         cfg.set("items.sword.lore", java.util.List.of("<gray>A powerful starter weapon"));
         cfg.set("items.sword.enchantments.sharpness", 5);
         cfg.set("items.sword.unbreakable", true);
+        cfg.set("items.sword.item-flags", java.util.List.of("HIDE_ATTRIBUTES"));
 
         cfg.set("items.food.material", "COOKED_BEEF");
         cfg.set("items.food.amount", 32);
@@ -99,6 +101,7 @@ public class YamlKitStorage implements KitStorage {
             kit.setPermission(cfg.getString("permission"));
             kit.setCooldown(cfg.getLong("cooldown"));
             kit.setOneTime(cfg.getBoolean("one-time"));
+            kit.setCategory(cfg.getString("category", "default"));
 
             kit.setIconMaterial(cfg.getString("icon.material"));
             kit.setIconModelData(cfg.getInt("icon.custom-model-data"));
@@ -164,6 +167,7 @@ public class YamlKitStorage implements KitStorage {
         cfg.set("permission", kit.getPermission());
         cfg.set("cooldown", kit.getCooldown());
         cfg.set("one-time", kit.isOneTime());
+        cfg.set("category", kit.getCategory());
 
         cfg.set("icon.material", kit.getIconMaterial());
         cfg.set("icon.custom-model-data", kit.getIconModelData());
@@ -243,6 +247,10 @@ public class YamlKitStorage implements KitStorage {
 
         item.setUnbreakable(itemSec.getBoolean("unbreakable"));
 
+        if (itemSec.isList("item-flags")) {
+            item.setItemFlags(itemSec.getStringList("item-flags"));
+        }
+
         return item;
     }
 
@@ -274,5 +282,9 @@ public class YamlKitStorage implements KitStorage {
         }
 
         cfg.set(path + ".unbreakable", item.isUnbreakable());
+
+        if (item.getItemFlags() != null && !item.getItemFlags().isEmpty()) {
+            cfg.set(path + ".item-flags", item.getItemFlags());
+        }
     }
 }

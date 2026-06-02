@@ -18,6 +18,10 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 public class KitMenuListener implements Listener {
 
     private final EasyKits plugin;
@@ -32,8 +36,13 @@ public class KitMenuListener implements Listener {
         String title = PlainTextComponentSerializer.plainText()
                 .serialize(event.getView().title());
 
-        if (title.equalsIgnoreCase("Easy Kits")) {
-            handleKitMenuClick(event);
+        if (title.equalsIgnoreCase(KitMenu.CATEGORY_TITLE_TEXT)) {
+            handleCategoryMenuClick(event);
+            return;
+        }
+
+        if (title.startsWith(KitMenu.KIT_TITLE_PREFIX)) {
+            handleKitMenuClick(event, title);
             return;
         }
 
@@ -42,11 +51,66 @@ public class KitMenuListener implements Listener {
         }
     }
 
-    private void handleKitMenuClick(InventoryClickEvent event) {
+    private void handleCategoryMenuClick(InventoryClickEvent event) {
 
         event.setCancelled(true);
 
         if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+
+        int rawSlot = event.getRawSlot();
+
+        if (rawSlot < 0 || rawSlot >= event.getInventory().getSize()) {
+            return;
+        }
+
+        Set<String> categorySet = new KitMenu(plugin).getVisibleCategories(player);
+        List<String> categories = new ArrayList<>(categorySet);
+
+        if (rawSlot >= categories.size()) {
+            return;
+        }
+
+        new KitMenu(plugin).open(player, categories.get(rawSlot), 0);
+    }
+
+    private void handleKitMenuClick(InventoryClickEvent event, String title) {
+
+        event.setCancelled(true);
+
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+
+        int rawSlot = event.getRawSlot();
+
+        if (rawSlot < 0 || rawSlot >= event.getInventory().getSize()) {
+            return;
+        }
+
+        ParsedKitMenuTitle parsed = parseKitMenuTitle(title);
+
+        if (parsed == null) {
+            return;
+        }
+
+        if (rawSlot == 45) {
+            new KitMenu(plugin).openCategories(player);
+            return;
+        }
+
+        if (rawSlot == 48) {
+            new KitMenu(plugin).open(player, parsed.category(), parsed.page() - 1);
+            return;
+        }
+
+        if (rawSlot == 50) {
+            new KitMenu(plugin).open(player, parsed.category(), parsed.page() + 1);
+            return;
+        }
+
+        if (rawSlot >= KitMenu.KITS_PER_PAGE) {
             return;
         }
 
@@ -56,13 +120,12 @@ public class KitMenuListener implements Listener {
             return;
         }
 
-        int slot = event.getRawSlot();
-
-        if (slot < 0 || slot >= event.getInventory().getSize()) {
-            return;
-        }
-
-        Kit clickedKit = getKitBySlot(slot);
+        Kit clickedKit = new KitMenu(plugin).getKitByDisplaySlot(
+                player,
+                parsed.category(),
+                parsed.page(),
+                rawSlot
+        );
 
         if (clickedKit == null) {
             return;
@@ -115,16 +178,34 @@ public class KitMenuListener implements Listener {
         }
     }
 
-    private Kit getKitBySlot(int slot) {
+    private ParsedKitMenuTitle parseKitMenuTitle(String title) {
 
-        for (Kit kit : plugin.getKitManager().getKits().values()) {
-
-            if (kit.getSlot() == slot) {
-                return kit;
-            }
+        if (!title.startsWith(KitMenu.KIT_TITLE_PREFIX)) {
+            return null;
         }
 
-        return null;
+        String rest = title.substring(KitMenu.KIT_TITLE_PREFIX.length());
+
+        int marker = rest.lastIndexOf(" - Page ");
+
+        if (marker < 0) {
+            return new ParsedKitMenuTitle(rest.toLowerCase(), 0);
+        }
+
+        String category = rest.substring(0, marker).toLowerCase();
+        String pageText = rest.substring(marker + " - Page ".length());
+
+        try {
+            int page = Integer.parseInt(pageText) - 1;
+
+            if (page < 0) {
+                page = 0;
+            }
+
+            return new ParsedKitMenuTitle(category, page);
+        } catch (NumberFormatException ex) {
+            return new ParsedKitMenuTitle(category, 0);
+        }
     }
 
     private boolean canAccess(Player player, Kit kit) {
@@ -282,6 +363,9 @@ public class KitMenuListener implements Listener {
                     parsed
             );
         }
+    }
+
+    private record ParsedKitMenuTitle(String category, int page) {
     }
 
     private enum EquipmentSlotType {

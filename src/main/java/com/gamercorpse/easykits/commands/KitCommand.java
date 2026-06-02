@@ -3,6 +3,7 @@ package com.gamercorpse.easykits.commands;
 import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.gui.KitEditorMenu;
 import com.gamercorpse.easykits.models.Kit;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -52,7 +53,7 @@ public class KitCommand implements CommandExecutor, TabCompleter {
                 return new OpenMenuCommand(plugin).execute(sender, args);
             }
 
-            case "edit" -> {
+            case "edit", "editor" -> {
 
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Players only.");
@@ -65,7 +66,7 @@ public class KitCommand implements CommandExecutor, TabCompleter {
                 }
 
                 if (args.length < 2) {
-                    player.sendMessage("Usage: /" + label + " edit <kit>");
+                    player.sendMessage("Usage: /" + label + " " + args[0].toLowerCase() + " <kit>");
                     return true;
                 }
 
@@ -120,25 +121,63 @@ public class KitCommand implements CommandExecutor, TabCompleter {
                     || player.hasPermission("easykits.kit.edit")) {
 
                 completions.add("edit");
+                completions.add("editor");
+            }
+
+            return filter(completions, args[0]);
+        }
+
+        if (args.length == 2) {
+
+            if (args[0].equalsIgnoreCase("give")) {
+
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    completions.add(online.getName());
+                }
+
+                return filter(completions, args[1]);
+            }
+
+            if (args[0].equalsIgnoreCase("delete")
+                    || args[0].equalsIgnoreCase("edit")
+                    || args[0].equalsIgnoreCase("editor")) {
+
+                for (Kit kit : plugin.getKitManager().getKits().values()) {
+                    completions.add(kit.getId());
+                }
+
+                return filter(completions, args[1]);
             }
 
             return completions;
         }
 
-        if (args.length == 2 &&
-                (
-                        args[0].equalsIgnoreCase("give")
-                                || args[0].equalsIgnoreCase("delete")
-                                || args[0].equalsIgnoreCase("edit")
-                )) {
+        if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
 
             for (Kit kit : plugin.getKitManager().getKits().values()) {
                 completions.add(kit.getId());
             }
 
-            return completions;
+            return filter(completions, args[2]);
         }
 
         return completions;
+    }
+
+    private List<String> filter(List<String> completions, String input) {
+
+        if (input == null || input.isEmpty()) {
+            return completions;
+        }
+
+        List<String> filtered = new ArrayList<>();
+
+        for (String completion : completions) {
+            if (completion.toLowerCase().startsWith(input.toLowerCase())) {
+                filtered.add(completion);
+            }
+        }
+
+        return filtered;
     }
 }

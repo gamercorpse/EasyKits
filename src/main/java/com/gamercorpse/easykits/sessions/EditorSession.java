@@ -17,7 +17,18 @@ public class EditorSession {
     private boolean editingPermission;
     private boolean editingCooldown;
     private boolean editingSlot;
+    private boolean editingCategory;
     private boolean editingCommand;
+
+    private boolean editingItemDisplayName;
+    private boolean editingItemLore;
+    private boolean editingItemMaterial;
+    private boolean editingItemAmount;
+    private boolean editingItemCustomModelData;
+    private boolean editingItemEnchantments;
+    private boolean editingItemFlags;
+
+    private String editingItemKey;
 
     public EditorSession(UUID playerId, Kit kit) {
         this.playerId = playerId;
@@ -45,7 +56,29 @@ public class EditorSession {
     }
 
     public boolean isWaitingForChat() {
-        return editingDisplayName || editingPermission || editingCooldown || editingSlot || editingCommand;
+        return editingDisplayName
+                || editingPermission
+                || editingCooldown
+                || editingSlot
+                || editingCategory
+                || editingCommand
+                || editingItemDisplayName
+                || editingItemLore
+                || editingItemMaterial
+                || editingItemAmount
+                || editingItemCustomModelData
+                || editingItemEnchantments
+                || editingItemFlags;
+    }
+
+    public void clearItemEditStates() {
+        editingItemDisplayName = false;
+        editingItemLore = false;
+        editingItemMaterial = false;
+        editingItemAmount = false;
+        editingItemCustomModelData = false;
+        editingItemEnchantments = false;
+        editingItemFlags = false;
     }
 
     public boolean isEditingDisplayName() {
@@ -80,11 +113,83 @@ public class EditorSession {
         this.editingSlot = editingSlot;
     }
 
+    public boolean isEditingCategory() {
+        return editingCategory;
+    }
+
+    public void setEditingCategory(boolean editingCategory) {
+        this.editingCategory = editingCategory;
+    }
+
     public boolean isEditingCommand() {
         return editingCommand;
     }
 
     public void setEditingCommand(boolean editingCommand) {
         this.editingCommand = editingCommand;
+    }
+
+    public boolean isEditingItemDisplayName() {
+        return editingItemDisplayName;
+    }
+
+    public void setEditingItemDisplayName(boolean editingItemDisplayName) {
+        this.editingItemDisplayName = editingItemDisplayName;
+    }
+
+    public boolean isEditingItemLore() {
+        return editingItemLore;
+    }
+
+    public void setEditingItemLore(boolean editingItemLore) {
+        this.editingItemLore = editingItemLore;
+    }
+
+    public boolean isEditingItemMaterial() {
+        return editingItemMaterial;
+    }
+
+    public void setEditingItemMaterial(boolean editingItemMaterial) {
+        this.editingItemMaterial = editingItemMaterial;
+    }
+
+    public boolean isEditingItemAmount() {
+        return editingItemAmount;
+    }
+
+    public void setEditingItemAmount(boolean editingItemAmount) {
+        this.editingItemAmount = editingItemAmount;
+    }
+
+    public boolean isEditingItemCustomModelData() {
+        return editingItemCustomModelData;
+    }
+
+    public void setEditingItemCustomModelData(boolean editingItemCustomModelData) {
+        this.editingItemCustomModelData = editingItemCustomModelData;
+    }
+
+    public boolean isEditingItemEnchantments() {
+        return editingItemEnchantments;
+    }
+
+    public void setEditingItemEnchantments(boolean editingItemEnchantments) {
+        this.editingItemEnchantments = editingItemEnchantments;
+    }
+
+    public boolean isEditingItemFlags() {
+        return editingItemFlags;
+    }
+
+    public void setEditingItemFlags(boolean editingItemFlags) {
+        this.editingItemFlags = editingItemFlags;
+    }
+
+    public String getEditingItemKey() {
+        return editingItemKey;
+    }
+
+    public void setEditingItemKey(String editingItemKey) {
+        this.editingItemKey = editingItemKey;
     }
 }

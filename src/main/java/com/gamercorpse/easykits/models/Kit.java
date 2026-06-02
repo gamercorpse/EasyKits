@@ -18,6 +18,8 @@ public class Kit {
 
     private int slot;
 
+    private String category = "default";
+
     private Map<String, KitItem> items = new HashMap<>();
 
     private Map<String, String> commands = new HashMap<>();
@@ -90,6 +92,18 @@ public class Kit {
 
     public void setSlot(int slot) {
         this.slot = slot;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        if (category == null || category.isBlank()) {
+            this.category = "default";
+        } else {
+            this.category = category.toLowerCase();
+        }
     }
 
     public Map<String, KitItem> getItems() {
