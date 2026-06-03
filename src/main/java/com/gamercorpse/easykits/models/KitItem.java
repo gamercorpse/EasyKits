@@ -7,8 +7,13 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +35,8 @@ public class KitItem {
     private boolean unbreakable;
 
     private List<String> itemFlags;
+
+    private String serializedItem;
 
     public String getMaterial() {
         return material;
@@ -95,6 +102,14 @@ public class KitItem {
         this.itemFlags = itemFlags;
     }
 
+    public String getSerializedItem() {
+        return serializedItem;
+    }
+
+    public void setSerializedItem(String serializedItem) {
+        this.serializedItem = serializedItem;
+    }
+
     public static KitItem fromItemStack(ItemStack item) {
 
         KitItem kitItem = new KitItem();
@@ -105,10 +120,13 @@ public class KitItem {
             return kitItem;
         }
 
-        kitItem.setMaterial(item.getType().name());
-        kitItem.setAmount(item.getAmount());
+        ItemStack clone = item.clone();
 
-        ItemMeta meta = item.getItemMeta();
+        kitItem.setSerializedItem(serializeItem(clone));
+        kitItem.setMaterial(clone.getType().name());
+        kitItem.setAmount(clone.getAmount());
+
+        ItemMeta meta = clone.getItemMeta();
 
         if (meta != null) {
 
@@ -148,11 +166,11 @@ public class KitItem {
             }
         }
 
-        if (!item.getEnchantments().isEmpty()) {
+        if (!clone.getEnchantments().isEmpty()) {
 
             Map<String, Integer> enchantments = new HashMap<>();
 
-            for (Map.Entry<Enchantment, Integer> entry : item.getEnchantments().entrySet()) {
+            for (Map.Entry<Enchantment, Integer> entry : clone.getEnchantments().entrySet()) {
                 enchantments.put(entry.getKey().getKey().getKey(), entry.getValue());
             }
 
@@ -160,5 +178,51 @@ public class KitItem {
         }
 
         return kitItem;
+    }
+
+    public static String serializeItem(ItemStack item) {
+
+        if (item == null || item.getType() == Material.AIR) {
+            return null;
+        }
+
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
+
+            dataOutput.writeObject(item);
+            dataOutput.close();
+
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    public static ItemStack deserializeItem(String data) {
+
+        if (data == null || data.isBlank()) {
+            return null;
+        }
+
+        try {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(data));
+            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
+
+            Object object = dataInput.readObject();
+
+            dataInput.close();
+
+            if (object instanceof ItemStack item) {
+                return item;
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
     }
 }

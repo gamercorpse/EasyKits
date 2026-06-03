@@ -105,6 +105,8 @@ public class YamlKitStorage implements KitStorage {
 
             kit.setIconMaterial(cfg.getString("icon.material"));
             kit.setIconModelData(cfg.getInt("icon.custom-model-data"));
+            kit.setSerializedIcon(cfg.getString("icon.serialized-item"));
+
             kit.setSlot(cfg.getInt("slot"));
 
             if (cfg.isList("commands")) {
@@ -172,6 +174,10 @@ public class YamlKitStorage implements KitStorage {
         cfg.set("icon.material", kit.getIconMaterial());
         cfg.set("icon.custom-model-data", kit.getIconModelData());
 
+        if (kit.getSerializedIcon() != null && !kit.getSerializedIcon().isBlank()) {
+            cfg.set("icon.serialized-item", kit.getSerializedIcon());
+        }
+
         cfg.set("slot", kit.getSlot());
 
         if (kit.getCommands() != null && !kit.getCommands().isEmpty()) {
@@ -217,6 +223,8 @@ public class YamlKitStorage implements KitStorage {
 
         KitItem item = new KitItem();
 
+        item.setSerializedItem(itemSec.getString("serialized-item"));
+
         item.setMaterial(itemSec.getString("material"));
         item.setAmount(itemSec.getInt("amount", 1));
 
@@ -258,6 +266,10 @@ public class YamlKitStorage implements KitStorage {
 
         if (item == null || item.getMaterial() == null || item.getMaterial().isBlank()) {
             return;
+        }
+
+        if (item.getSerializedItem() != null && !item.getSerializedItem().isBlank()) {
+            cfg.set(path + ".serialized-item", item.getSerializedItem());
         }
 
         cfg.set(path + ".material", item.getMaterial());

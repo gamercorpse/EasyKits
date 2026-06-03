@@ -344,6 +344,8 @@ public class KitMenuListener implements Listener {
             return;
         }
 
+        String playerName = player.getName();
+
         for (String command : kit.getCommands().values()) {
 
             if (command == null || command.isBlank()) {
@@ -351,16 +353,20 @@ public class KitMenuListener implements Listener {
             }
 
             String parsed = command
-                    .replace("%player%", player.getName())
-                    .replace("{player}", player.getName());
+                    .replace("%player%", playerName)
+                    .replace("{player}", playerName);
 
             if (parsed.startsWith("/")) {
                 parsed = parsed.substring(1);
             }
 
-            Bukkit.dispatchCommand(
-                    Bukkit.getConsoleSender(),
-                    parsed
+            String finalCommand = parsed;
+
+            Bukkit.getGlobalRegionScheduler().run(plugin, task ->
+                    Bukkit.dispatchCommand(
+                            Bukkit.getConsoleSender(),
+                            finalCommand
+                    )
             );
         }
     }

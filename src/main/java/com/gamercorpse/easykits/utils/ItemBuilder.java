@@ -1,8 +1,10 @@
 package com.gamercorpse.easykits.utils;
 
+import com.gamercorpse.easykits.models.KitItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -15,23 +17,46 @@ public class ItemBuilder {
 
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
-    public static ItemStack build(com.gamercorpse.easykits.models.KitItem kitItem) {
+    public static ItemStack build(KitItem kitItem) {
 
-        Material material;
+        ItemStack item = KitItem.deserializeItem(kitItem.getSerializedItem());
 
-        try {
-            material = Material.valueOf(kitItem.getMaterial().toUpperCase());
-        } catch (Exception e) {
-            return new ItemStack(Material.BARRIER);
+        if (item == null) {
+
+            Material material;
+
+            try {
+                material = Material.valueOf(kitItem.getMaterial().toUpperCase());
+            } catch (Exception e) {
+                return new ItemStack(Material.BARRIER);
+            }
+
+            item = new ItemStack(material, Math.max(1, kitItem.getAmount()));
         }
 
-        ItemStack item = new ItemStack(material, Math.max(1, kitItem.getAmount()));
+        if (kitItem.getMaterial() != null) {
+            try {
+                Material material = Material.valueOf(kitItem.getMaterial().toUpperCase());
+
+                if (!material.isAir()) {
+                    item.setType(material);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        item.setAmount(Math.max(1, kitItem.getAmount()));
 
         ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
+
+        if (meta == null) {
+            return item;
+        }
 
         if (kitItem.getName() != null) {
             meta.displayName(mm.deserialize(kitItem.getName()));
+        } else if (meta.hasDisplayName()) {
+            meta.displayName(null);
         }
 
         if (kitItem.getLore() != null) {
@@ -41,14 +66,20 @@ public class ItemBuilder {
                     .toList();
 
             meta.lore(lore);
+        } else if (meta.hasLore()) {
+            meta.lore(null);
         }
 
-        if (kitItem.isUnbreakable()) {
-            meta.setUnbreakable(true);
-        }
+        meta.setUnbreakable(kitItem.isUnbreakable());
 
         if (kitItem.getCustomModelData() != null) {
             meta.setCustomModelData(kitItem.getCustomModelData());
+        } else if (meta.hasCustomModelData()) {
+            meta.setCustomModelData(null);
+        }
+
+        for (Enchantment enchantment : meta.getEnchants().keySet()) {
+            meta.removeEnchant(enchantment);
         }
 
         if (kitItem.getEnchantments() != null) {
@@ -56,7 +87,7 @@ public class ItemBuilder {
             for (Map.Entry<String, Integer> entry : kitItem.getEnchantments().entrySet()) {
 
                 Enchantment ench = Enchantment.getByKey(
-                        org.bukkit.NamespacedKey.minecraft(entry.getKey().toLowerCase())
+                        NamespacedKey.minecraft(entry.getKey().toLowerCase())
                 );
 
                 if (ench != null) {
@@ -64,6 +95,8 @@ public class ItemBuilder {
                 }
             }
         }
+
+        meta.removeItemFlags(ItemFlag.values());
 
         if (kitItem.getItemFlags() != null) {
             for (String flagName : kitItem.getItemFlags()) {

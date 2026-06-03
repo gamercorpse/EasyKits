@@ -15,6 +15,7 @@ public class Kit {
 
     private String iconMaterial;
     private int iconModelData;
+    private String serializedIcon;
 
     private int slot;
 
@@ -84,6 +85,14 @@ public class Kit {
 
     public void setIconModelData(int iconModelData) {
         this.iconModelData = iconModelData;
+    }
+
+    public String getSerializedIcon() {
+        return serializedIcon;
+    }
+
+    public void setSerializedIcon(String serializedIcon) {
+        this.serializedIcon = serializedIcon;
     }
 
     public int getSlot() {

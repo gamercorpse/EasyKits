@@ -1,14 +1,19 @@
 package com.gamercorpse.easykits.sessions;
 
 import com.gamercorpse.easykits.models.Kit;
+import com.gamercorpse.easykits.models.KitItem;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class EditorSession {
 
     private static final Map<UUID, EditorSession> SESSIONS = new HashMap<>();
+    private static final Set<UUID> IGNORE_NEXT_CLOSE = new HashSet<>();
 
     private final UUID playerId;
     private final Kit kit;
@@ -32,7 +37,7 @@ public class EditorSession {
 
     public EditorSession(UUID playerId, Kit kit) {
         this.playerId = playerId;
-        this.kit = kit;
+        this.kit = copyKit(kit);
     }
 
     public static void create(UUID uuid, Kit kit) {
@@ -45,6 +50,15 @@ public class EditorSession {
 
     public static void remove(UUID uuid) {
         SESSIONS.remove(uuid);
+        IGNORE_NEXT_CLOSE.remove(uuid);
+    }
+
+    public static void ignoreNextClose(UUID uuid) {
+        IGNORE_NEXT_CLOSE.add(uuid);
+    }
+
+    public static boolean consumeIgnoreNextClose(UUID uuid) {
+        return IGNORE_NEXT_CLOSE.remove(uuid);
     }
 
     public UUID getPlayerId() {
@@ -79,6 +93,77 @@ public class EditorSession {
         editingItemCustomModelData = false;
         editingItemEnchantments = false;
         editingItemFlags = false;
+    }
+
+    private static Kit copyKit(Kit source) {
+
+        Kit copy = new Kit(source.getId());
+
+        copy.setDisplayName(source.getDisplayName());
+        copy.setPermission(source.getPermission());
+        copy.setCooldown(source.getCooldown());
+        copy.setOneTime(source.isOneTime());
+        copy.setIconMaterial(source.getIconMaterial());
+        copy.setIconModelData(source.getIconModelData());
+        copy.setSerializedIcon(source.getSerializedIcon());
+        copy.setSlot(source.getSlot());
+        copy.setCategory(source.getCategory());
+
+        Map<String, KitItem> copiedItems = new HashMap<>();
+
+        if (source.getItems() != null) {
+            for (Map.Entry<String, KitItem> entry : source.getItems().entrySet()) {
+                copiedItems.put(entry.getKey(), copyKitItem(entry.getValue()));
+            }
+        }
+
+        copy.setItems(copiedItems);
+
+        Map<String, String> copiedCommands = new HashMap<>();
+
+        if (source.getCommands() != null) {
+            copiedCommands.putAll(source.getCommands());
+        }
+
+        copy.setCommands(copiedCommands);
+
+        copy.setHelmet(copyKitItem(source.getHelmet()));
+        copy.setChestplate(copyKitItem(source.getChestplate()));
+        copy.setLeggings(copyKitItem(source.getLeggings()));
+        copy.setBoots(copyKitItem(source.getBoots()));
+        copy.setOffhand(copyKitItem(source.getOffhand()));
+
+        return copy;
+    }
+
+    private static KitItem copyKitItem(KitItem source) {
+
+        if (source == null) {
+            return null;
+        }
+
+        KitItem copy = new KitItem();
+
+        copy.setMaterial(source.getMaterial());
+        copy.setAmount(source.getAmount());
+        copy.setCustomModelData(source.getCustomModelData());
+        copy.setName(source.getName());
+        copy.setUnbreakable(source.isUnbreakable());
+        copy.setSerializedItem(source.getSerializedItem());
+
+        if (source.getLore() != null) {
+            copy.setLore(new ArrayList<>(source.getLore()));
+        }
+
+        if (source.getEnchantments() != null) {
+            copy.setEnchantments(new HashMap<>(source.getEnchantments()));
+        }
+
+        if (source.getItemFlags() != null) {
+            copy.setItemFlags(new ArrayList<>(source.getItemFlags()));
+        }
+
+        return copy;
     }
 
     public boolean isEditingDisplayName() {

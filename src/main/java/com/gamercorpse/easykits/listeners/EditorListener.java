@@ -19,6 +19,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,17 +44,17 @@ public class EditorListener implements Listener {
         String title = event.getView().getTitle();
 
         if (title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
-            handleKitEditorClick(event, player);
+            handleKitEditorClick(event, player, title);
             return;
         }
 
         if (title.startsWith(CommandEditorMenu.TITLE_PREFIX)) {
-            handleCommandEditorClick(event, player, title);
+            handleCommandEditorClick(event, player);
             return;
         }
 
         if (title.startsWith(ItemListEditorMenu.TITLE_PREFIX)) {
-            handleItemListClick(event, player, title);
+            handleItemListClick(event, player);
             return;
         }
 
@@ -62,126 +63,7 @@ public class EditorListener implements Listener {
         }
     }
 
-    private void handleKitEditorClick(InventoryClickEvent event, Player player) {
-
-        if (!player.hasPermission("easykits.kit.edit")) {
-            event.setCancelled(true);
-            player.closeInventory();
-            return;
-        }
-
-        int rawSlot = event.getRawSlot();
-
-        if (rawSlot < 0) {
-            return;
-        }
-
-        EditorSession session = EditorSession.get(player.getUniqueId());
-
-        if (session == null) {
-            event.setCancelled(true);
-            return;
-        }
-
-        Kit kit = session.getKit();
-
-        if (rawSlot >= 54) {
-            if (event.isShiftClick()) {
-                event.setCancelled(true);
-            }
-            return;
-        }
-
-        event.setCancelled(true);
-
-        switch (rawSlot) {
-
-            case 10 -> {
-                session.setEditingDisplayName(true);
-                player.closeInventory();
-                player.sendMessage("Type the new display name in chat.");
-            }
-
-            case 12 -> {
-                session.setEditingPermission(true);
-                player.closeInventory();
-                player.sendMessage("Type the new permission in chat. Type none to clear it.");
-            }
-
-            case 14 -> {
-                session.setEditingCooldown(true);
-                player.closeInventory();
-                player.sendMessage("Type the cooldown in seconds.");
-            }
-
-            case 16 -> {
-                kit.setOneTime(!kit.isOneTime());
-                new KitEditorMenu(plugin).open(player, kit);
-            }
-
-            case 28 -> {
-                ItemStack cursor = event.getCursor();
-
-                if (cursor != null && cursor.getType() != Material.AIR) {
-
-                    kit.setIconMaterial(cursor.getType().name());
-
-                    if (cursor.hasItemMeta() && cursor.getItemMeta().hasCustomModelData()) {
-                        kit.setIconModelData(cursor.getItemMeta().getCustomModelData());
-                    } else {
-                        kit.setIconModelData(0);
-                    }
-
-                    player.sendMessage("Kit icon updated.");
-                    new KitEditorMenu(plugin).open(player, kit);
-
-                } else {
-                    player.sendMessage("Pick up an item from your inventory, then click the kit icon slot.");
-                }
-            }
-
-            case 30 -> {
-                session.setEditingSlot(true);
-                player.closeInventory();
-                player.sendMessage("Type the menu slot number. Slots 0-44 are page 1, 45-89 are page 2, etc.");
-            }
-
-            case 32 -> new PreviewMenu(plugin).open(player, kit);
-
-            case 34 -> {
-                KitEditorMenu.importPlayerInventory(player, kit);
-                player.sendMessage("Imported inventory, armor, and offhand. Click Save Kit to save changes.");
-                new KitEditorMenu(plugin).open(player, kit);
-            }
-
-            case 36 -> {
-                session.setEditingCategory(true);
-                player.closeInventory();
-                player.sendMessage("Type the category name in chat. Type default to use the default category.");
-            }
-
-            case 38 -> new ItemListEditorMenu(plugin).open(player, kit);
-
-            case 46 -> new CommandEditorMenu(plugin).open(player, kit);
-
-            case 49 -> {
-                plugin.getKitManager().save(kit);
-                player.sendMessage("Kit saved.");
-                player.closeInventory();
-            }
-
-            case 53 -> {
-                plugin.getKitManager().delete(kit.getId());
-                player.sendMessage("Kit deleted.");
-                player.closeInventory();
-            }
-
-            default -> {
-            }
-        }
-    }
-
-    private void handleCommandEditorClick(InventoryClickEvent event, Player player, String title) {
+    private void handleKitEditorClick(InventoryClickEvent event, Player player, String title) {
 
         event.setCancelled(true);
 
@@ -196,24 +78,156 @@ public class EditorListener implements Listener {
             return;
         }
 
-        String kitId = title.substring(CommandEditorMenu.TITLE_PREFIX.length());
+        EditorSession session = EditorSession.get(player.getUniqueId());
 
-        Kit kit = plugin.getKitManager().getKit(kitId);
+        if (session == null) {
+            String kitId = title.substring(KitEditorMenu.TITLE_PREFIX.length());
+            Kit loadedKit = plugin.getKitManager().getKit(kitId);
 
-        if (kit == null) {
+            if (loadedKit == null) {
+                player.closeInventory();
+                return;
+            }
+
+            EditorSession.create(player.getUniqueId(), loadedKit);
+            session = EditorSession.get(player.getUniqueId());
+        }
+
+        Kit kit = session.getKit();
+
+        if (rawSlot == 10 || clickedNameContains(event, "Edit Display Name")) {
+            session.setEditingDisplayName(true);
             player.closeInventory();
+            player.sendMessage("Type the new display name in chat.");
+            return;
+        }
+
+        if (rawSlot == 12 || clickedNameContains(event, "Edit Permission")) {
+            session.setEditingPermission(true);
+            player.closeInventory();
+            player.sendMessage("Type the new permission in chat. Type none to clear it.");
+            return;
+        }
+
+        if (rawSlot == 14 || clickedNameContains(event, "Edit Cooldown")) {
+            session.setEditingCooldown(true);
+            player.closeInventory();
+            player.sendMessage("Type the cooldown in seconds.");
+            return;
+        }
+
+        if (rawSlot == 16 || clickedNameContains(event, "Toggle One-Time")) {
+            kit.setOneTime(!kit.isOneTime());
+            player.sendMessage("One-time setting updated. Click Save Kit to persist changes.");
+            openKitEditorLater(player, kit);
+            return;
+        }
+
+        if (rawSlot == 28 || clickedNameContains(event, "Kit Icon")) {
+            ItemStack cursor = event.getCursor();
+
+            if (cursor != null && cursor.getType() != Material.AIR) {
+
+                ItemStack icon = cursor.clone();
+                icon.setAmount(1);
+
+                kit.setSerializedIcon(KitItem.serializeItem(icon));
+                kit.setIconMaterial(icon.getType().name());
+
+                if (icon.hasItemMeta() && icon.getItemMeta().hasCustomModelData()) {
+                    kit.setIconModelData(icon.getItemMeta().getCustomModelData());
+                } else {
+                    kit.setIconModelData(0);
+                }
+
+                player.sendMessage("Kit icon updated. Click Save Kit to persist changes.");
+                openKitEditorLater(player, kit);
+
+            } else {
+                player.sendMessage("Pick up an item from your inventory, then click the kit icon slot.");
+            }
+
+            return;
+        }
+
+        if (rawSlot == 30 || clickedNameContains(event, "Edit Menu Slot")) {
+            session.setEditingSlot(true);
+            player.closeInventory();
+            player.sendMessage("Type the menu slot number. Slots 0-44 are page 1, 45-89 are page 2, etc.");
+            return;
+        }
+
+        if (rawSlot == 32 || clickedNameContains(event, "Preview Kit")) {
+            openPreviewLater(player, kit);
+            return;
+        }
+
+        if (rawSlot == 34 || clickedNameContains(event, "Import Inventory")) {
+            KitEditorMenu.importPlayerInventory(player, kit);
+            player.sendMessage("Imported inventory, armor, and offhand. Click Save Kit to persist changes.");
+            openKitEditorLater(player, kit);
+            return;
+        }
+
+        if (rawSlot == 36 || clickedNameContains(event, "Edit Category")) {
+            session.setEditingCategory(true);
+            player.closeInventory();
+            player.sendMessage("Type the category name in chat. Type default to use the default category.");
+            return;
+        }
+
+        if (rawSlot == 38 || clickedNameContains(event, "Edit Items")) {
+            openItemListLater(player, kit);
+            return;
+        }
+
+        if (rawSlot == 46 || clickedNameContains(event, "Edit Commands")) {
+            openCommandEditorLater(player, kit);
+            return;
+        }
+
+        if (rawSlot == 49 || clickedNameContains(event, "Save Kit")) {
+            plugin.getKitManager().save(kit);
+            player.sendMessage("Kit saved.");
+            player.closeInventory();
+            EditorSession.remove(player.getUniqueId());
+            return;
+        }
+
+        if (rawSlot == 53 || clickedNameContains(event, "Delete Kit")) {
+            plugin.getKitManager().delete(kit.getId());
+            player.sendMessage("Kit deleted.");
+            player.closeInventory();
+            EditorSession.remove(player.getUniqueId());
+        }
+    }
+
+    private void handleCommandEditorClick(InventoryClickEvent event, Player player) {
+
+        event.setCancelled(true);
+
+        if (!player.hasPermission("easykits.kit.edit")) {
+            player.closeInventory();
+            return;
+        }
+
+        int rawSlot = event.getRawSlot();
+
+        if (rawSlot < 0 || rawSlot >= 54) {
             return;
         }
 
         EditorSession session = EditorSession.get(player.getUniqueId());
 
         if (session == null) {
-            EditorSession.create(player.getUniqueId(), kit);
-            session = EditorSession.get(player.getUniqueId());
+            player.closeInventory();
+            return;
         }
 
+        Kit kit = session.getKit();
+
         if (rawSlot == 49) {
-            new KitEditorMenu(plugin).open(player, kit);
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -233,15 +247,14 @@ public class EditorListener implements Listener {
             }
 
             Map.Entry<String, String> entry = commands.get(rawSlot);
-
             kit.getCommands().remove(entry.getKey());
 
-            player.sendMessage("Removed command: " + entry.getValue());
-            new CommandEditorMenu(plugin).open(player, kit);
+            player.sendMessage("Removed command: " + entry.getValue() + ". Click Save Kit to persist changes.");
+            openCommandEditorLater(player, kit);
         }
     }
 
-    private void handleItemListClick(InventoryClickEvent event, Player player, String title) {
+    private void handleItemListClick(InventoryClickEvent event, Player player) {
 
         event.setCancelled(true);
 
@@ -256,23 +269,17 @@ public class EditorListener implements Listener {
             return;
         }
 
-        String kitId = title.substring(ItemListEditorMenu.TITLE_PREFIX.length());
-        Kit kit = plugin.getKitManager().getKit(kitId);
+        EditorSession session = EditorSession.get(player.getUniqueId());
 
-        if (kit == null) {
+        if (session == null) {
             player.closeInventory();
             return;
         }
 
-        EditorSession session = EditorSession.get(player.getUniqueId());
-
-        if (session == null) {
-            EditorSession.create(player.getUniqueId(), kit);
-            session = EditorSession.get(player.getUniqueId());
-        }
+        Kit kit = session.getKit();
 
         if (rawSlot == 49) {
-            new KitEditorMenu(plugin).open(player, kit);
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -286,8 +293,9 @@ public class EditorListener implements Listener {
 
             String key = ItemListEditorMenu.nextItemKey(kit);
             kit.getItems().put(key, KitItem.fromItemStack(cursor.clone()));
-            player.sendMessage("Added item.");
-            new ItemListEditorMenu(plugin).open(player, kit);
+
+            player.sendMessage("Added item. Click Save Kit to persist changes.");
+            openItemListLater(player, kit);
             return;
         }
 
@@ -321,7 +329,7 @@ public class EditorListener implements Listener {
         }
 
         session.setEditingItemKey(itemKey);
-        new ItemEditorMenu(plugin).open(player, kit.getId(), itemKey, item);
+        openItemEditorLater(player, kit, itemKey, item);
     }
 
     private void handleItemEditorClick(InventoryClickEvent event, Player player, String title) {
@@ -346,12 +354,14 @@ public class EditorListener implements Listener {
             return;
         }
 
-        Kit kit = plugin.getKitManager().getKit(parts.kitId());
+        EditorSession session = EditorSession.get(player.getUniqueId());
 
-        if (kit == null) {
+        if (session == null) {
             player.closeInventory();
             return;
         }
+
+        Kit kit = session.getKit();
 
         KitItem item = getKitItem(kit, parts.itemKey());
 
@@ -360,13 +370,6 @@ public class EditorListener implements Listener {
             item.setMaterial("STONE");
             item.setAmount(1);
             setKitItem(kit, parts.itemKey(), item);
-        }
-
-        EditorSession session = EditorSession.get(player.getUniqueId());
-
-        if (session == null) {
-            EditorSession.create(player.getUniqueId(), kit);
-            session = EditorSession.get(player.getUniqueId());
         }
 
         session.setEditingItemKey(parts.itemKey());
@@ -417,7 +420,8 @@ public class EditorListener implements Listener {
 
             case 16 -> {
                 item.setUnbreakable(!item.isUnbreakable());
-                new ItemEditorMenu(plugin).open(player, kit.getId(), parts.itemKey(), item);
+                player.sendMessage("Unbreakable updated. Click Save Kit to persist changes.");
+                openItemEditorLater(player, kit, parts.itemKey(), item);
             }
 
             case 30 -> {
@@ -427,18 +431,18 @@ public class EditorListener implements Listener {
                 player.sendMessage("Type item flags separated by commas, or clear. Example: HIDE_ATTRIBUTES,HIDE_ENCHANTS,HIDE_UNBREAKABLE");
             }
 
-            case 45 -> new ItemListEditorMenu(plugin).open(player, kit);
+            case 45 -> openItemListLater(player, kit);
 
             case 49 -> {
                 plugin.getKitManager().save(kit);
                 player.sendMessage("Kit saved.");
-                new ItemListEditorMenu(plugin).open(player, kit);
+                openItemListLater(player, kit);
             }
 
             case 53 -> {
                 removeKitItem(kit, parts.itemKey());
-                player.sendMessage("Item deleted.");
-                new ItemListEditorMenu(plugin).open(player, kit);
+                player.sendMessage("Item deleted. Click Save Kit to persist changes.");
+                openItemListLater(player, kit);
             }
 
             default -> {
@@ -459,9 +463,7 @@ public class EditorListener implements Listener {
         }
 
         if (title.startsWith(KitEditorMenu.TITLE_PREFIX)) {
-
             for (int slot : event.getRawSlots()) {
-
                 if (slot >= 0 && slot < 54) {
                     event.setCancelled(true);
                     return;
@@ -495,8 +497,8 @@ public class EditorListener implements Listener {
         if (session.isEditingDisplayName()) {
             session.setEditingDisplayName(false);
             kit.setDisplayName(message);
-            player.sendMessage("Display name updated.");
-            reopenKitEditor(player, kit);
+            player.sendMessage("Display name updated. Click Save Kit to persist changes.");
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -509,8 +511,8 @@ public class EditorListener implements Listener {
                 kit.setPermission(message);
             }
 
-            player.sendMessage("Permission updated.");
-            reopenKitEditor(player, kit);
+            player.sendMessage("Permission updated. Click Save Kit to persist changes.");
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -519,12 +521,12 @@ public class EditorListener implements Listener {
 
             try {
                 kit.setCooldown(Long.parseLong(message));
-                player.sendMessage("Cooldown updated.");
+                player.sendMessage("Cooldown updated. Click Save Kit to persist changes.");
             } catch (NumberFormatException ex) {
                 player.sendMessage("Invalid cooldown.");
             }
 
-            reopenKitEditor(player, kit);
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -533,26 +535,26 @@ public class EditorListener implements Listener {
 
             try {
                 kit.setSlot(Integer.parseInt(message));
-                player.sendMessage("Slot updated.");
+                player.sendMessage("Slot updated. Click Save Kit to persist changes.");
             } catch (NumberFormatException ex) {
                 player.sendMessage("Invalid slot.");
             }
 
-            reopenKitEditor(player, kit);
+            openKitEditorLater(player, kit);
             return;
         }
 
         if (session.isEditingCategory()) {
             session.setEditingCategory(false);
 
-            if (message.isBlank()) {
+            if (message.equalsIgnoreCase("clear") || message.equalsIgnoreCase("none") || message.isBlank()) {
                 kit.setCategory("default");
             } else {
                 kit.setCategory(message);
             }
 
-            player.sendMessage("Category updated.");
-            reopenKitEditor(player, kit);
+            player.sendMessage("Category updated to '" + kit.getCategory() + "'. Click Save Kit to persist changes.");
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -565,15 +567,12 @@ public class EditorListener implements Listener {
 
             if (!message.isBlank()) {
                 kit.getCommands().put(CommandEditorMenu.nextCommandKey(kit), message);
-                player.sendMessage("Command added.");
+                player.sendMessage("Command added. Click Save Kit to persist changes.");
             } else {
                 player.sendMessage("Command was empty.");
             }
 
-            player.getScheduler().run(plugin, task ->
-                            new CommandEditorMenu(plugin).open(player, kit),
-                    null
-            );
+            openCommandEditorLater(player, kit);
             return;
         }
 
@@ -586,7 +585,7 @@ public class EditorListener implements Listener {
 
         if (key == null) {
             session.clearItemEditStates();
-            reopenKitEditor(player, kit);
+            openKitEditorLater(player, kit);
             return;
         }
 
@@ -608,8 +607,8 @@ public class EditorListener implements Listener {
                 item.setName(message);
             }
 
-            player.sendMessage("Item display name updated.");
-            reopenItemEditor(player, kit, key, item);
+            player.sendMessage("Item display name updated. Click Save Kit to persist changes.");
+            openItemEditorLater(player, kit, key, item);
             return;
         }
 
@@ -622,8 +621,8 @@ public class EditorListener implements Listener {
                 item.setLore(Arrays.asList(message.split("\\|")));
             }
 
-            player.sendMessage("Item lore updated.");
-            reopenItemEditor(player, kit, key, item);
+            player.sendMessage("Item lore updated. Click Save Kit to persist changes.");
+            openItemEditorLater(player, kit, key, item);
             return;
         }
 
@@ -637,13 +636,13 @@ public class EditorListener implements Listener {
                     player.sendMessage("Invalid material.");
                 } else {
                     item.setMaterial(material.name());
-                    player.sendMessage("Item material updated.");
+                    player.sendMessage("Item material updated. Click Save Kit to persist changes.");
                 }
             } catch (Exception ex) {
                 player.sendMessage("Invalid material.");
             }
 
-            reopenItemEditor(player, kit, key, item);
+            openItemEditorLater(player, kit, key, item);
             return;
         }
 
@@ -654,12 +653,12 @@ public class EditorListener implements Listener {
                 int amount = Integer.parseInt(message);
                 amount = Math.max(1, Math.min(64, amount));
                 item.setAmount(amount);
-                player.sendMessage("Item amount updated.");
+                player.sendMessage("Item amount updated. Click Save Kit to persist changes.");
             } catch (NumberFormatException ex) {
                 player.sendMessage("Invalid amount.");
             }
 
-            reopenItemEditor(player, kit, key, item);
+            openItemEditorLater(player, kit, key, item);
             return;
         }
 
@@ -668,24 +667,24 @@ public class EditorListener implements Listener {
 
             if (message.equalsIgnoreCase("clear") || message.equalsIgnoreCase("none")) {
                 item.setCustomModelData(null);
-                player.sendMessage("Custom model data cleared.");
+                player.sendMessage("Custom model data cleared. Click Save Kit to persist changes.");
             } else {
                 try {
                     item.setCustomModelData(Integer.parseInt(message));
-                    player.sendMessage("Custom model data updated.");
+                    player.sendMessage("Custom model data updated. Click Save Kit to persist changes.");
                 } catch (NumberFormatException ex) {
                     player.sendMessage("Invalid custom model data.");
                 }
             }
 
-            reopenItemEditor(player, kit, key, item);
+            openItemEditorLater(player, kit, key, item);
             return;
         }
 
         if (session.isEditingItemEnchantments()) {
             session.setEditingItemEnchantments(false);
             editEnchantments(player, item, message);
-            reopenItemEditor(player, kit, key, item);
+            openItemEditorLater(player, kit, key, item);
             return;
         }
 
@@ -694,7 +693,7 @@ public class EditorListener implements Listener {
 
             if (message.equalsIgnoreCase("clear") || message.equalsIgnoreCase("none")) {
                 item.setItemFlags(null);
-                player.sendMessage("Item flags cleared.");
+                player.sendMessage("Item flags cleared. Click Save Kit to persist changes.");
             } else {
                 item.setItemFlags(Arrays.stream(message.split(","))
                         .map(String::trim)
@@ -702,10 +701,10 @@ public class EditorListener implements Listener {
                         .map(String::toUpperCase)
                         .toList());
 
-                player.sendMessage("Item flags updated.");
+                player.sendMessage("Item flags updated. Click Save Kit to persist changes.");
             }
 
-            reopenItemEditor(player, kit, key, item);
+            openItemEditorLater(player, kit, key, item);
         }
     }
 
@@ -713,7 +712,7 @@ public class EditorListener implements Listener {
 
         if (message.equalsIgnoreCase("clear") || message.equalsIgnoreCase("none")) {
             item.setEnchantments(null);
-            player.sendMessage("Enchantments cleared.");
+            player.sendMessage("Enchantments cleared. Click Save Kit to persist changes.");
             return;
         }
 
@@ -727,9 +726,8 @@ public class EditorListener implements Listener {
         String[] parts = message.trim().split("\\s+");
 
         if (parts.length == 2 && parts[0].equalsIgnoreCase("remove")) {
-
             enchantments.remove(parts[1].toLowerCase());
-            player.sendMessage("Enchantment removed.");
+            player.sendMessage("Enchantment removed. Click Save Kit to persist changes.");
             return;
         }
 
@@ -750,24 +748,54 @@ public class EditorListener implements Listener {
         try {
             int level = Integer.parseInt(parts[1]);
             enchantments.put(enchantment.getKey().getKey(), level);
-            player.sendMessage("Enchantment updated.");
+            player.sendMessage("Enchantment updated. Click Save Kit to persist changes.");
         } catch (NumberFormatException ex) {
             player.sendMessage("Invalid enchantment level.");
         }
     }
 
-    private void reopenKitEditor(Player player, Kit kit) {
-        player.getScheduler().run(plugin, task ->
-                        new KitEditorMenu(plugin).open(player, kit),
-                null
-        );
+    private boolean clickedNameContains(InventoryClickEvent event, String text) {
+
+        ItemStack item = event.getCurrentItem();
+
+        if (item == null || item.getType().isAir()) {
+            return false;
+        }
+
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null || !meta.hasDisplayName()) {
+            return false;
+        }
+
+        String name = meta.getDisplayName();
+
+        return name != null && name.toLowerCase().contains(text.toLowerCase());
     }
 
-    private void reopenItemEditor(Player player, Kit kit, String key, KitItem item) {
-        player.getScheduler().run(plugin, task ->
-                        new ItemEditorMenu(plugin).open(player, kit.getId(), key, item),
-                null
-        );
+    private void openKitEditorLater(Player player, Kit kit) {
+        EditorSession.ignoreNextClose(player.getUniqueId());
+        player.getScheduler().run(plugin, task -> new KitEditorMenu(plugin).open(player, kit), null);
+    }
+
+    private void openCommandEditorLater(Player player, Kit kit) {
+        EditorSession.ignoreNextClose(player.getUniqueId());
+        player.getScheduler().run(plugin, task -> new CommandEditorMenu(plugin).open(player, kit), null);
+    }
+
+    private void openItemListLater(Player player, Kit kit) {
+        EditorSession.ignoreNextClose(player.getUniqueId());
+        player.getScheduler().run(plugin, task -> new ItemListEditorMenu(plugin).open(player, kit), null);
+    }
+
+    private void openItemEditorLater(Player player, Kit kit, String key, KitItem item) {
+        EditorSession.ignoreNextClose(player.getUniqueId());
+        player.getScheduler().run(plugin, task -> new ItemEditorMenu(plugin).open(player, kit.getId(), key, item), null);
+    }
+
+    private void openPreviewLater(Player player, Kit kit) {
+        EditorSession.ignoreNextClose(player.getUniqueId());
+        player.getScheduler().run(plugin, task -> new PreviewMenu(plugin).open(player, kit), null);
     }
 
     private KitItem getKitItem(Kit kit, String key) {
@@ -809,17 +837,13 @@ public class EditorListener implements Listener {
     private ItemTitleParts parseItemEditorTitle(String title) {
 
         String value = title.substring(ItemEditorMenu.TITLE_PREFIX.length());
-
         int split = value.indexOf(":");
 
         if (split <= 0 || split >= value.length() - 1) {
             return null;
         }
 
-        String kitId = value.substring(0, split);
-        String itemKey = value.substring(split + 1);
-
-        return new ItemTitleParts(kitId, itemKey);
+        return new ItemTitleParts(value.substring(0, split), value.substring(split + 1));
     }
 
     private record ItemTitleParts(String kitId, String itemKey) {
@@ -833,7 +857,12 @@ public class EditorListener implements Listener {
         if (!title.startsWith(KitEditorMenu.TITLE_PREFIX)
                 && !title.startsWith(CommandEditorMenu.TITLE_PREFIX)
                 && !title.startsWith(ItemListEditorMenu.TITLE_PREFIX)
-                && !title.startsWith(ItemEditorMenu.TITLE_PREFIX)) {
+                && !title.startsWith(ItemEditorMenu.TITLE_PREFIX)
+                && !title.startsWith(PreviewMenu.TITLE_PREFIX)) {
+            return;
+        }
+
+        if (EditorSession.consumeIgnoreNextClose(event.getPlayer().getUniqueId())) {
             return;
         }
 

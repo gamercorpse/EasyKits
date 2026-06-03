@@ -2,6 +2,7 @@ package com.gamercorpse.easykits.gui;
 
 import com.gamercorpse.easykits.EasyKits;
 import com.gamercorpse.easykits.models.Kit;
+import com.gamercorpse.easykits.models.KitItem;
 import com.gamercorpse.easykits.utils.ColorUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -232,17 +233,32 @@ public class KitMenu {
 
     private ItemStack kitIcon(Player player, Kit kit) {
 
-        Material material;
+        ItemStack item = KitItem.deserializeItem(kit.getSerializedIcon());
 
-        try {
-            material = Material.valueOf(
-                    kit.getIconMaterial().toUpperCase()
-            );
-        } catch (Exception ex) {
-            material = Material.CHEST;
+        if (item == null || item.getType().isAir()) {
+
+            Material material;
+
+            try {
+                material = Material.valueOf(
+                        kit.getIconMaterial().toUpperCase()
+                );
+            } catch (Exception ex) {
+                material = Material.CHEST;
+            }
+
+            item = new ItemStack(material);
+
+            ItemMeta meta = item.getItemMeta();
+
+            if (meta != null && kit.getIconModelData() > 0) {
+                meta.setCustomModelData(kit.getIconModelData());
+                item.setItemMeta(meta);
+            }
         }
 
-        ItemStack item = new ItemStack(material);
+        item = item.clone();
+        item.setAmount(1);
 
         ItemMeta meta = item.getItemMeta();
 
@@ -258,8 +274,8 @@ public class KitMenu {
 
             List<String> lore = new ArrayList<>();
 
-            lore.add("<gray>Left-click to claim this kit");
-            lore.add("<gray>Right-click to preview this kit");
+            lore.add("<blue>Left-click to claim this kit");
+            lore.add("<red>Right-click to preview this kit");
             lore.add("");
             lore.add("<yellow>Category: <white>" + kit.getCategory());
             lore.add("<yellow>Cooldown: <white>" + kit.getCooldown() + "s");
@@ -281,11 +297,6 @@ public class KitMenu {
             }
 
             meta.lore(components);
-
-            if (kit.getIconModelData() > 0) {
-                meta.setCustomModelData(kit.getIconModelData());
-            }
-
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
             item.setItemMeta(meta);

@@ -36,43 +36,58 @@ public class KitEditorMenu {
         inventory.setItem(14, button(Material.CLOCK, "Edit Cooldown"));
         inventory.setItem(16, button(kit.isOneTime() ? Material.LIME_DYE : Material.GRAY_DYE, "Toggle One-Time"));
 
+        inventory.setItem(20, button(Material.BOOKSHELF, "Edit Category"));
+        inventory.setItem(22, button(Material.ANVIL, "Edit Items"));
+        inventory.setItem(24, button(Material.COMMAND_BLOCK, "Edit Commands"));
+
         inventory.setItem(28, icon(kit));
         inventory.setItem(30, button(Material.HOPPER, "Edit Menu Slot"));
 
         inventory.setItem(32, button(Material.ENDER_EYE, "Preview Kit"));
         inventory.setItem(34, button(Material.CHEST, "Import Inventory"));
-        inventory.setItem(36, button(Material.BOOKSHELF, "Edit Category: " + kit.getCategory()));
-        inventory.setItem(38, button(Material.ANVIL, "Edit Items"));
-        inventory.setItem(46, button(Material.COMMAND_BLOCK, "Edit Commands"));
 
         inventory.setItem(49, button(Material.EMERALD_BLOCK, "Save Kit"));
         inventory.setItem(53, button(Material.BARRIER, "Delete Kit"));
 
-        EditorSession.create(player.getUniqueId(), kit);
+        if (EditorSession.get(player.getUniqueId()) == null) {
+            EditorSession.create(player.getUniqueId(), kit);
+        }
+
         player.openInventory(inventory);
     }
 
     private ItemStack icon(Kit kit) {
 
-        Material material = Material.CHEST;
+        ItemStack item = KitItem.deserializeItem(kit.getSerializedIcon());
 
-        if (kit.getIconMaterial() != null) {
-            try {
-                material = Material.valueOf(kit.getIconMaterial().toUpperCase());
-            } catch (Exception ignored) {
+        if (item == null || item.getType().isAir()) {
+
+            Material material = Material.CHEST;
+
+            if (kit.getIconMaterial() != null) {
+                try {
+                    material = Material.valueOf(kit.getIconMaterial().toUpperCase());
+                } catch (Exception ignored) {
+                }
+            }
+
+            item = new ItemStack(material);
+
+            ItemMeta meta = item.getItemMeta();
+
+            if (meta != null && kit.getIconModelData() > 0) {
+                meta.setCustomModelData(kit.getIconModelData());
+                item.setItemMeta(meta);
             }
         }
 
-        ItemStack item = new ItemStack(material);
+        item = item.clone();
+        item.setAmount(1);
+
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
             meta.setDisplayName("Kit Icon");
-
-            if (kit.getIconModelData() > 0) {
-                meta.setCustomModelData(kit.getIconModelData());
-            }
-
             item.setItemMeta(meta);
         }
 
@@ -135,17 +150,11 @@ public class KitEditorMenu {
 
         kit.setItems(items);
 
-        ItemStack helmet = player.getInventory().getHelmet();
-        ItemStack chestplate = player.getInventory().getChestplate();
-        ItemStack leggings = player.getInventory().getLeggings();
-        ItemStack boots = player.getInventory().getBoots();
-        ItemStack offhand = player.getInventory().getItemInOffHand();
-
-        kit.setHelmet(toKitItemOrNull(helmet));
-        kit.setChestplate(toKitItemOrNull(chestplate));
-        kit.setLeggings(toKitItemOrNull(leggings));
-        kit.setBoots(toKitItemOrNull(boots));
-        kit.setOffhand(toKitItemOrNull(offhand));
+        kit.setHelmet(toKitItemOrNull(player.getInventory().getHelmet()));
+        kit.setChestplate(toKitItemOrNull(player.getInventory().getChestplate()));
+        kit.setLeggings(toKitItemOrNull(player.getInventory().getLeggings()));
+        kit.setBoots(toKitItemOrNull(player.getInventory().getBoots()));
+        kit.setOffhand(toKitItemOrNull(player.getInventory().getItemInOffHand()));
     }
 
     public static Map<String, KitItem> collectPlayerInventory(Player player) {
